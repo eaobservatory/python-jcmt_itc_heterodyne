@@ -61,6 +61,39 @@ class HeterodyneReceiver(object):
         ))
 
     @classmethod
+    def get_interpolated_t_rx(cls, receiver, freq):
+        """
+        Get an interpolated receiver temperature value.
+
+        Outside the range of data values given in the "receiver_info.json"
+        file, the first or last values are given as appropriate.
+        """
+
+        freq_prev = None
+        t_rx_prev = None
+
+        for (freq_i, t_rx_i) in cls.get_receiver_info(receiver).t_rx:
+            if freq <= freq_i:
+                if freq_prev is None:
+                    # This is the first value, so return it immediately.
+                    return t_rx_i
+
+                else:
+                    # Perform interpolation.
+                    return (
+                        t_rx_prev +
+                        (t_rx_i - t_rx_prev) * (freq - freq_prev) /
+                        (freq_i - freq_prev))
+
+            freq_prev = freq_i
+            t_rx_prev = t_rx_i
+
+        else:
+            # Frequency is beyond the last value: return the last t_rx
+            # value.
+            return t_rx_prev
+
+    @classmethod
     def get_interpolated_opacity(cls, tau_225, freq):
         """
         Get an interpolated opacity value for a given frequency at a given
