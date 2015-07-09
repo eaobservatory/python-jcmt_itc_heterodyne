@@ -22,6 +22,9 @@ from __future__ import absolute_import, division, print_function, \
 from collections import namedtuple
 from math import atan, cos, sqrt
 
+from .receiver import HeterodyneReceiver
+
+
 time_between_refs = 30.0
 harp_array_size = 120.0
 harp_f_angle = cos(atan(0.25))
@@ -95,7 +98,7 @@ class HeterodyneITC(object):
         multiscan = 1.0
         # For arrays, if the dy is less than the footprint, take the
         # overlap into account when rasterizing.
-        if map_mode == self.RASTER and instrument == self.HARP:
+        if map_mode == self.RASTER and instrument == HeterodyneReceiver.HARP:
             multiscan = 1.0 / sqrt(harp_array_size * harp_f_angle / dy)
 
         rms = (
@@ -104,7 +107,7 @@ class HeterodyneITC(object):
             sqrt(freq_res * 1.0e6 * time))
 
         # Apply correction for dual polarization.
-        if instrument == self.WD and dual_polarization:
+        if instrument == HeterodyneReceiver.WD and dual_polarization:
             rms /= sqrt(2.0)
 
         return rms
