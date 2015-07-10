@@ -28,6 +28,7 @@ from .receiver import HeterodyneReceiver
 time_between_refs = 30.0
 harp_array_size = 120.0
 harp_f_angle = cos(atan(0.25))
+speed_of_light = 299792458
 
 
 DurationParam = namedtuple(
@@ -58,6 +59,24 @@ class HeterodyneITC(object):
         """
 
         pass
+
+    def velocity_to_freq_res(self, freq, velocity):
+        """
+        Convert a velocity (in km/s) to a frequency resolution
+        (in MHz) for a given frequency (in GHz).
+        """
+
+        # Scale: 10^3 (km/s) * 10^9 (GHz) / 10^6 (MHz) = 10^6
+        return 1.0e6 * velocity * freq / speed_of_light
+
+    def freq_res_to_velocity(self, freq, freq_res):
+        """
+        Convert a frequency resolution (in MHz) to a velocity
+        resolution (in km/s) at a given frequency (in GHz).
+        """
+
+        # Scale: 10^6 (MHz) / 10^9 (GHz) / 10^3 (km/s) = 10^-6
+        return 1.0e-6 * speed_of_light * freq_res / freq
 
     def _calculate_t_sys(
             self, receiver, freq, tau_225, zenith_angle_deg,
