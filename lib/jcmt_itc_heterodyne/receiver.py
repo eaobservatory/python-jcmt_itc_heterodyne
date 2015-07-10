@@ -126,11 +126,16 @@ class HeterodyneReceiver(object):
         tau_freqs = []
 
         for tau_value in tau_values:
+            trigger = trigger_prev = False
             prev_freq = None
             prev_tau = None
 
             for (freq_i, tau_freq) in cls.get_opacity_data(tau_value):
                 if freq_i >= freq:
+                    # TODO: remove delayed triggering -- this is present
+                    # only to replicate the behavior of HITEC.
+                    trigger = True
+                if trigger_prev:
                     if prev_freq is None:
                         # Retain the first value.
                         tau_freqs.append(tau_freq)
@@ -144,6 +149,7 @@ class HeterodyneReceiver(object):
 
                 prev_freq = freq_i
                 prev_tau = tau_freq
+                trigger_prev = trigger
 
             else:
                 # Retain the last value.
