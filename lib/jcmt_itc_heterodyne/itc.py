@@ -20,7 +20,7 @@ from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
 from collections import namedtuple
-from math import atan, cos, sqrt
+from math import atan, cos, exp, radians, sqrt
 
 from .receiver import HeterodyneReceiver
 
@@ -58,6 +58,105 @@ class HeterodyneITC(object):
         """
 
         pass
+
+    def _calculate_t_sys(
+            self, receiver, freq, tau_225, zenith_angle_deg,
+            is_dsb):
+        """
+        Calculate the system temperature.
+        """
+
+        t_im = 0.0
+
+        t_rx = HeterodyneReceiver.get_interpolated_t_rx(
+            receiver=receiver, freq=freq)
+
+        tau = HeterodyneReceiver.get_interpolated_opacity(
+            tau_225=tau_225, freq=freq)
+
+        # To duplicate behavior of HITEC, round the tau value.
+        # It is unclear why HITEC does this!
+        # TODO: remove this?
+        if tau < 0.1:
+            rounded_tau = round(tau, 3)
+        else:
+            rounded_tau = round(tau, 2)
+
+        nu_sky = exp(- rounded_tau / cos(radians(zenith_angle_deg)))
+
+        t_sky = 260.0 * (1 - nu_sky)
+
+        nu_tel = HeterodyneReceiver.get_receiver_info(receiver).nu_tel
+
+        t_tel = 265.0 * (1 - nu_tel)
+
+        if not is_dsb:
+            # Single sideband mode.
+
+            if receiver == HeterodyneReceiver.HARP:
+                # HITEC documentation said: 20110310: bypass ATM model for HARP
+                # and use empirical fit to data based on a 345.796 GHz T_sys
+                # for the tau and elevation in question.  Previous calculation
+                # was:
+                # t_sys = (
+                #     (t_rx + nu_tel * t_sky + t_tel + t_im) /
+                #     (nu_sky * nu_tel))
+
+                # For 345.796 GHz reference:
+                ref_freq = 345.796
+                ref_t_rx = 90
+                ref_t_atm = 260
+                ref_t_amb = 265
+                ref_f_850 = 3.3
+                ref_nu_tel = 0.9
+
+                ref_nu_sky = exp(- ref_f_850 * tau_225 /
+                                 cos(radians(zenith_angle_deg)))
+
+                ref_t_sky = ref_t_atm * (1 - ref_nu_sky)
+                ref_t_tel = ref_t_amb * (1 - ref_nu_tel)
+
+                t_sys_345 = (
+                    (ref_t_rx + ref_nu_tel * ref_t_sky + ref_t_tel) /
+                    (ref_nu_sky * ref_nu_tel))
+
+                c2 = 3.75 - 3.66 * exp(-tau_225 /
+                                       cos(radians(zenith_angle_deg)))
+                c1 = -2.0
+                c0 = t_sys_345 + 15
+
+                x = freq - 345.796
+
+                if freq < 329.5:
+                    c0 *= 1.5
+                elif freq < 333:
+                    c0 *= 1.1
+                elif freq > 372:
+                    c0 *= 2.5
+                elif freq > 366.25:
+                    c0 *= 1.7
+
+                return c2 * x * x + c1 * x + c0
+
+            else:
+                return (
+                    (t_rx + nu_tel * t_sky + t_tel + t_im) /
+                    (nu_sky * nu_tel))
+
+        else:
+            # Dual sideband mode.
+
+            if receiver == HeterodyneReceiver.WD:
+                # HITEC documentation said: RxWD has SSB T_Rx=600K.
+                # Do nothing now, but may have to use the right DSB T_Rx
+                # which could be half of the SSB T_Rx.  (t_rx = t_rx / 2.0)
+
+                return (
+                    2.0 * (t_rx + nu_tel * t_sky + t_tel) / (nu_sky * nu_tel))
+
+            else:
+                return (
+                    2.0 * (t_rx + nu_tel * t_sky + t_tel) / (nu_sky * nu_tel))
 
     def _calculate_rms(
             self, time,
