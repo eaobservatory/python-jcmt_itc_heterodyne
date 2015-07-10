@@ -130,7 +130,7 @@ class HeterodyneReceiver(object):
             prev_tau = None
 
             for (freq_i, tau_freq) in cls.get_opacity_data(tau_value):
-                if freq_i > freq:
+                if freq_i >= freq:
                     if prev_freq is None:
                         # Retain the first value.
                         tau_freqs.append(tau_freq)
