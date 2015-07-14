@@ -36,6 +36,10 @@ DurationParam = namedtuple(
     ('a', 'b', 'c', 'd', 'e'))
 
 
+class HeterodyneITCError(Exception):
+    pass
+
+
 class HeterodyneITC(object):
     GRID = 1
     JIGGLE = 2
@@ -52,6 +56,10 @@ class HeterodyneITC(object):
         (JIGGLE, BMSW),
         (RASTER, PSSW),
     ))
+
+    RMS_TO_TIME = 1
+    INT_TIME_TO_RMS = 2
+    ELAPSED_TO_RMS = 3
 
     def __init__(self):
         """
@@ -77,6 +85,138 @@ class HeterodyneITC(object):
 
         # Scale: 10^6 (MHz) / 10^9 (GHz) / 10^3 (km/s) = 10^-6
         return 1.0e-6 * speed_of_light * freq_res / freq
+
+    def _calculate(
+            self, calc_mode, input_,
+            receiver, map_mode, sw_mode,
+            freq, freq_res,
+            tau_225, zenith_angle_deg, is_dsb, dual_polarization,
+            n_points,
+            dim_x, dim_y, dx, dy, basket_weave, array_overscan,
+            separate_offs, continuum_mode):
+        """
+        Perform ITC calculation.
+
+        For raster maps:
+        dim_x and dim_y are the dimensions of the map (in arc-seconds, and
+        'x' being the direction along the scan when not basket weaving).
+        dx and dy are the pixel size (in arc-seconds) except for array
+        receivers where dx defines square pixels and dy defines the step
+        made by the array between scans.
+
+        Otherwise:
+        n_points should be specified directly.
+        """
+
+        self._check_mode(receiver, map_mode, sw_mode)
+
+        t_sys = self._calculate_t_sys(
+            receiver=receiver, freq=freq, tau_225=tau_225,
+            zenith_angle_deg=zenith_angle_deg, is_dsb=is_dsb)
+
+        if map_mode == self.RASTER:
+            if separate_offs:
+                raise HeterodyneITCError(
+                    'Separate offs should not be used in raster mode.')
+
+            if receiver == HeterodyneReceiver.HARP and array_overscan:
+                overscan_x = 0.5 * harp_array_size
+            else:
+                overscan_x = 0.0
+
+            overscan_y = 0.0
+
+            passes = 2 if basket_weave else 1
+
+        else:
+            passes = 1
+            n_rows = 1
+
+        int_times = []
+        elapsed_times = []
+        rmss = []
+
+        for pass_ in range(0, passes):
+            if map_mode == self.RASTER:
+                if pass_ == 0:
+                    # Non-basket weave, or primary basket-weave direction.
+                    n_points = int((dim_x + 2 * overscan_x) / dx) + 1
+                    n_rows = int((dim_y + 2 * overscan_y) / dy) + 1
+
+                else:
+                    # Secondary basket-weave direction: scan along "dim_y"
+                    # but with overscan_x / dx still along scan direction (y)
+                    # (and overscan_y / dy still across scan direction (x)).
+                    n_points = int((dim_y + 2 * overscan_x) / dx) + 1
+                    n_rows = int((dim_x + 2 * overscan_y) / dy) + 1
+
+            if calc_mode == self.RMS_TO_TIME:
+                int_time = self._integration_time_for_rms(
+                    rms=input_,
+                    receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
+                    n_points=n_points, separate_offs=separate_offs,
+                    dual_polarization=dual_polarization,
+                    t_sys=t_sys, freq_res=freq_res, dy=dy)
+
+                elapsed_time = self._elapsed_time_for_integration_time(
+                    time=int_time, n_rows=n_rows,
+                    map_mode=map_mode, sw_mode=sw_mode,
+                    n_points=n_points, separate_offs=separate_offs,
+                    continuum_mode=continuum_mode)
+
+                int_times.append(int_time)
+                elapsed_times.append(elapsed_time)
+
+            elif calc_mode == self.INT_TIME_TO_RMS:
+                rms = self._rms_in_integration_time(
+                    time=input_,
+                    receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
+                    n_points=n_points, separate_offs=separate_offs,
+                    dual_polarization=dual_polarization,
+                    t_sys=t_sys, freq_res=freq_res, dy=dy)
+
+                elapsed_time = self._elapsed_time_for_integration_time(
+                    time=input_, n_rows=n_rows,
+                    map_mode=map_mode, sw_mode=sw_mode,
+                    n_points=n_points, separate_offs=separate_offs,
+                    continuum_mode=continuum_mode)
+
+                rmss.append(rms)
+                elapsed_times.append(elaposed_time)
+
+            elif calc_mode == self.ELAPSED_TO_RMS:
+                int_time = self._integration_time_for_elapsed_time(
+                    elapsed=input_, n_rows=n_rows,
+                    n_points=n_points, separate_offs=separate_offs,
+                    continuum_mode=continuum_mode)
+
+                rms = self._rms_in_integration_time(
+                    time=int_time,
+                    receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
+                    n_points=n_points, separate_offs=separate_offs,
+                    dual_polarization=dual_polarization,
+                    t_sys=t_sys, freq_res=freq_res, dy=dy)
+
+                int_times.append(int_time)
+                rmss.append(rms)
+
+        return {
+            'rms': None if not rmss else (sum(rmss) / passes),
+            'int_time': None if not int_times else (sum(int_times) / passes),
+            'elapsed_time': None if not elapsed_times else (
+                sum(elapsed_times) / passes),
+        }
+
+    def _check_mode(self, receiver, map_mode, sw_mode):
+        """
+        Check whether the given mode is supported.
+
+        Raises HeterodyneITCError if the mode is not supported.
+        """
+
+        if (map_mode, sw_mode) not in self.valid_modes:
+            raise HeterodyneITCError(
+                'The combination of mapping and switching modes is invalid.')
 
     def _calculate_t_sys(
             self, receiver, freq, tau_225, zenith_angle_deg,
@@ -177,9 +317,9 @@ class HeterodyneITC(object):
                 return (
                     2.0 * (t_rx + nu_tel * t_sky + t_tel) / (nu_sky * nu_tel))
 
-    def _calculate_rms(
+    def _rms_in_integration_time(
             self, time,
-            instrument, map_mode, sw_mode,
+            receiver, map_mode, sw_mode,
             n_points, separate_offs,
             dual_polarization, t_sys, freq_res, dy):
         """
@@ -216,7 +356,7 @@ class HeterodyneITC(object):
         multiscan = 1.0
         # For arrays, if the dy is less than the footprint, take the
         # overlap into account when rasterizing.
-        if map_mode == self.RASTER and instrument == HeterodyneReceiver.HARP:
+        if map_mode == self.RASTER and receiver == HeterodyneReceiver.HARP:
             multiscan = 1.0 / sqrt(harp_array_size * harp_f_angle / dy)
 
         rms = (
@@ -225,14 +365,14 @@ class HeterodyneITC(object):
             sqrt(freq_res * 1.0e6 * time))
 
         # Apply correction for dual polarization.
-        if instrument == HeterodyneReceiver.WD and dual_polarization:
+        if receiver == HeterodyneReceiver.WD and dual_polarization:
             rms /= sqrt(2.0)
 
         return rms
 
-    def _calculate_time(
+    def _integration_time_for_rms(
             self, rms,
-            instrument, map_mode, sw_mode,
+            receiver, map_mode, sw_mode,
             n_points, separate_offs,
             *args, **kwargs):
         """
@@ -264,8 +404,8 @@ class HeterodyneITC(object):
 
         # Iterate in the case of GRID PSSW because np_shared depends on time.
         for step in range(0, 5):
-            i_rms = self._calculate_rms(
-                time, instrument, map_mode, sw_mode,
+            i_rms = self._rms_in_integration_time(
+                time, receiver, map_mode, sw_mode,
                 n_points, separate_offs, *args, **kwargs)
 
             time = int(10 * time * (i_rms / rms) ** 2 + 0.5) / 10
@@ -363,21 +503,22 @@ class HeterodyneITC(object):
             d = 18
 
         else:
-            raise Exception('Duration parameters unknown for '
-                            'map mode {0} and switching mode {1}'.format(
-                                map_mode, sw_mode))
+            raise HeterodyneITCError(
+                'Duration parameters unknown for '
+                'map mode {0} and switching mode {1}'.format(
+                    map_mode, sw_mode))
 
         return DurationParam(a=a, b=b, c=c, d=d, e=e)
 
-    def _calculate_elapsed_time(
-            self, time, rows,
+    def _elapsed_time_for_integration_time(
+            self, time, n_rows,
             map_mode, sw_mode,
             n_points, separate_offs,
             continuum_mode):
         """
         Calculate the elapsed time of an observation.
 
-        rows should be 1 for non-raster observations.
+        n_rows should be 1 for non-raster observations.
         """
 
         param = self._get_duration_param(
@@ -386,14 +527,14 @@ class HeterodyneITC(object):
             continuum_mode=continuum_mode)
 
         return param.e * (
-            param.a + rows * (
+            param.a + n_rows * (
                 param.b * n_points * time +
                 param.c * sqrt(n_points) * time +
                 param.d)
         )
 
-    def _calculate_integration_time(
-            self, elapsed, rows,
+    def _integration_time_for_elapsed_time(
+            self, elapsed, n_rows,
             map_mode, sw_mode,
             n_points, separate_offs,
             continuum_mode):
@@ -401,7 +542,7 @@ class HeterodyneITC(object):
         Calculate the integration time of an observation based on the
         elapsed time.
 
-        rows should be 1 for non-raster observations.
+        n_rows should be 1 for non-raster observations.
         """
 
         param = self._get_duration_param(
@@ -410,7 +551,7 @@ class HeterodyneITC(object):
             continuum_mode=continuum_mode)
 
         time = (
-            (elapsed / param.e - param.a - rows * param.d) /
-            (rows * (param.b * n_points + param.c * sqrt(n_points))))
+            (elapsed / param.e - param.a - n_rows * param.d) /
+            (n_rows * (param.b * n_points + param.c * sqrt(n_points))))
 
         return int(10 * time + 0.5) / 10

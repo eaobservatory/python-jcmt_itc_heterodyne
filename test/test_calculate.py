@@ -18,6 +18,19 @@
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
+from unittest import TestCase
 
-from .itc import HeterodyneITC
-from .receiver import HeterodyneReceiver
+from jcmt_itc_heterodyne import HeterodyneITC, HeterodyneReceiver
+
+
+class CalculateTest(TestCase):
+    def test_rxa(self):
+        itc = HeterodyneITC()
+
+        result = itc._calculate(
+            HeterodyneITC.RMS_TO_TIME, 0.6,
+            HeterodyneReceiver.A3, HeterodyneITC.GRID, HeterodyneITC.PSSW,
+            233, 0.0192, 0.23, 25, True, False, 25,
+            None, None, None, None, None, None, False, False)
+        self.assertAlmostEqual(result['int_time'], 77.10, places=2)
+        self.assertAlmostEqual(result['elapsed_time'], 5187.9, places=1)
