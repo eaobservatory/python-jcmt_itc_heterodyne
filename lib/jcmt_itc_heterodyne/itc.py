@@ -187,7 +187,7 @@ class HeterodyneITC(object):
                     continuum_mode=continuum_mode)
 
                 rmss.append(rms)
-                elapsed_times.append(elaposed_time)
+                elapsed_times.append(elapsed_time)
 
             elif calc_mode == self.ELAPSED_TO_RMS:
                 int_time = self._integration_time_for_elapsed_time(
