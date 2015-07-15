@@ -28,21 +28,21 @@ class CalculateTest(TestCase):
         itc = HeterodyneITC()
 
         result = itc._calculate(HeterodyneITC.RMS_TO_TIME, rms, *args)
-        self.assertAlmostEqual(result['extra']['t_rx'], t_rx, places=1)
-        self.assertAlmostEqual(result['extra']['t_sys'], t_sys, places=1)
-        self.assertAlmostEqual(result['int_time'], int_, places=2)
-        self.assertAlmostEqual(result['elapsed_time'], elapsed, places=1)
+        self.assertAlmostEqual(result['extra']['t_rx'], t_rx, delta=0.1)
+        self.assertAlmostEqual(result['extra']['t_sys'], t_sys, delta=0.1)
+        self.assertAlmostEqual(result['int_time'], int_, delta=0.01)
+        self.assertAlmostEqual(result['elapsed_time'], elapsed, delta=0.1)
 
         result = itc._calculate(HeterodyneITC.ELAPSED_TO_RMS, elapsed, *args)
-        self.assertAlmostEqual(result['extra']['t_rx'], t_rx, places=1)
-        self.assertAlmostEqual(result['extra']['t_sys'], t_sys, places=1)
-        self.assertAlmostEqual(result['int_time'], int_, places=2)
-        self.assertAlmostEqual(result['rms'], rms, places=1)
+        self.assertAlmostEqual(result['extra']['t_rx'], t_rx, delta=0.1)
+        self.assertAlmostEqual(result['extra']['t_sys'], t_sys, delta=0.1)
+        self.assertAlmostEqual(result['int_time'], int_, delta=0.01)
+        self.assertAlmostEqual(result['rms'], rms, delta=0.1)
 
         result = itc._calculate(HeterodyneITC.INT_TIME_TO_RMS, int_, *args)
-        self.assertAlmostEqual(result['extra']['t_rx'], t_rx, places=1)
-        self.assertAlmostEqual(result['extra']['t_sys'], t_sys, places=1)
-        self.assertAlmostEqual(result['rms'], rms, places=1)
+        self.assertAlmostEqual(result['extra']['t_rx'], t_rx, delta=0.1)
+        self.assertAlmostEqual(result['extra']['t_sys'], t_sys, delta=0.1)
+        self.assertAlmostEqual(result['rms'], rms, delta=0.1)
         self.assertAlmostEqual(result['elapsed_time'], elapsed, delta=5)
 
     def test_rxa(self):
