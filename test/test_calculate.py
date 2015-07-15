@@ -33,7 +33,17 @@ class CalculateTest(TestCase):
         self.assertAlmostEqual(result['int_time'], int_, places=2)
         self.assertAlmostEqual(result['elapsed_time'], elapsed, places=1)
 
+        result = itc._calculate(HeterodyneITC.ELAPSED_TO_RMS, elapsed, *args)
+        self.assertAlmostEqual(result['extra']['t_rx'], t_rx, places=1)
+        self.assertAlmostEqual(result['extra']['t_sys'], t_sys, places=1)
+        self.assertAlmostEqual(result['int_time'], int_, places=2)
+        self.assertAlmostEqual(result['rms'], rms, places=1)
 
+        result = itc._calculate(HeterodyneITC.INT_TIME_TO_RMS, int_, *args)
+        self.assertAlmostEqual(result['extra']['t_rx'], t_rx, places=1)
+        self.assertAlmostEqual(result['extra']['t_sys'], t_sys, places=1)
+        self.assertAlmostEqual(result['rms'], rms, places=1)
+        self.assertAlmostEqual(result['elapsed_time'], elapsed, delta=5)
 
     def test_rxa(self):
         # RxA Grid PSSW
