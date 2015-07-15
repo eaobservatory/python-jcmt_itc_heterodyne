@@ -110,9 +110,14 @@ class HeterodyneITC(object):
 
         self._check_mode(receiver, map_mode, sw_mode)
 
+        extra_output = {}
+
         t_sys = self._calculate_t_sys(
             receiver=receiver, freq=freq, tau_225=tau_225,
-            zenith_angle_deg=zenith_angle_deg, is_dsb=is_dsb)
+            zenith_angle_deg=zenith_angle_deg, is_dsb=is_dsb,
+            extra_output=extra_output)
+
+        extra_output['t_sys'] = t_sys
 
         if map_mode == self.RASTER:
             if separate_offs:
@@ -205,6 +210,7 @@ class HeterodyneITC(object):
             'int_time': None if not int_times else (sum(int_times) / passes),
             'elapsed_time': None if not elapsed_times else (
                 sum(elapsed_times) / passes),
+            'extra': extra_output,
         }
 
     def _check_mode(self, receiver, map_mode, sw_mode):
@@ -220,9 +226,12 @@ class HeterodyneITC(object):
 
     def _calculate_t_sys(
             self, receiver, freq, tau_225, zenith_angle_deg,
-            is_dsb):
+            is_dsb, extra_output=None):
         """
         Calculate the system temperature.
+
+        "extra_output" can optionally be a dictionary into which extra
+        data are written, e.g. T_rx.
         """
 
         t_im = 0.0
@@ -232,6 +241,10 @@ class HeterodyneITC(object):
 
         tau = HeterodyneReceiver.get_interpolated_opacity(
             tau_225=tau_225, freq=freq)
+
+        if extra_output is not None:
+            extra_output['t_rx'] = t_rx
+            extra_output['tau'] = tau
 
         # To duplicate behavior of HITEC, round the tau value.
         # It is unclear why HITEC does this!
