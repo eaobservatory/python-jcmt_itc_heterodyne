@@ -132,3 +132,50 @@ class CalculateTest(TestCase):
             HeterodyneReceiver.A3, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             220, 0.0305, 0.15, 50, True, False, None,
             150, 300, 10, 10, True, None, False, False)
+
+    def test_rxw(self):
+        # RxW Grid PSSW
+
+        self._test_calculation(
+            2.5, 41.90, 11183.5, 478.4, 2208.2,
+            HeterodyneReceiver.WD, HeterodyneITC.GRID, HeterodyneITC.PSSW,
+            670, 0.0610, 0.04, 30, False, False, 100,
+            None, None, None, None, None, None, False, False)
+
+        self._test_calculation(
+            2.5, 20.90, 5618.5, 478.4, 2208.2,
+            HeterodyneReceiver.WD, HeterodyneITC.GRID, HeterodyneITC.PSSW,
+            670, 0.0610, 0.04, 30, False, True, 100,
+            None, None, None, None, None, None, False, False)
+
+        # RxW Grid BMSW
+
+        self._test_calculation(
+            3.5, 26.80, 5244.8, 636.1, 4693.2,
+            HeterodyneReceiver.WD, HeterodyneITC.GRID, HeterodyneITC.BMSW,
+            640, 0.0610, 0.06, 20, False, True, 81,
+            None, None, None, None, None, None, False, False)
+
+        # RxW Jiggle BMSW
+
+        self._test_calculation(
+            0.75, 118.70, 19998.9, 544.9, 1510.7,
+            HeterodyneReceiver.WD, HeterodyneITC.JIGGLE, HeterodyneITC.BMSW,
+            690, 0.0305, 0.02, 10, False, True, 121,
+            None, None, None, None, None, None, False, False)
+
+        # RxW Jiggle PSSW
+
+        self._test_calculation(
+            4.5, 148.50, 3354.4, 521.8, 21172.4,
+            HeterodyneReceiver.WD, HeterodyneITC.JIGGLE, HeterodyneITC.PSSW,
+            700, 0.488, 0.11, 15, False, False, 9,
+            None, None, None, None, None, None, True, False)
+
+        # RxW Raster PSSW
+
+        self._test_calculation(
+            5.0, 34.20, 133325.9, 632.1, 7570.6,
+            HeterodyneReceiver.WD, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
+            645, 0.061, 0.065, 45, False, True, None,
+            400, 200, 5, 5, False, None, False, False)
