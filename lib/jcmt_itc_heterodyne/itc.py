@@ -192,6 +192,7 @@ class HeterodyneITC(object):
             elif calc_mode == self.ELAPSED_TO_RMS:
                 int_time = self._integration_time_for_elapsed_time(
                     elapsed=input_, n_rows=n_rows,
+                    map_mode=map_mode, sw_mode=sw_mode,
                     n_points=n_points, separate_offs=separate_offs,
                     continuum_mode=continuum_mode)
 
