@@ -86,6 +86,114 @@ class HeterodyneITC(object):
         # Scale: 10^6 (MHz) / 10^9 (GHz) / 10^3 (km/s) = 10^-6
         return 1.0e-6 * speed_of_light * freq_res / freq
 
+    def calculate_time(
+            self, rms,
+            receiver, map_mode, sw_mode,
+            freq, freq_res,
+            tau_225, zenith_angle_deg, is_dsb, dual_polarization,
+            n_points,
+            dim_x, dim_y, dx, dy, basket_weave,
+            separate_offs, continuum_mode,
+            with_extra_output=False):
+        """
+        Calculate the observing time required for a given RMS.
+
+        If "with_extra_output" is specified then a tuple of the
+        elapsed time and a dictionary of extra output is returned.
+        """
+
+        output = self._calculate(
+            calc_mode=self.RMS_TO_TIME, input_=rms,
+            receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
+            freq=freq, freq_res=freq_res,
+            tau_225=tau_225, zenith_angle_deg=zenith_angle_deg,
+            is_dsb=is_dsb, dual_polarization=dual_polarization,
+            n_points=n_points,
+            dim_x=dim_x, dim_y=dim_y, dx=dx, dy=dy,
+            basket_weave=basket_weave, array_overscan=True,
+            separate_offs=separate_offs, continuum_mode=continuum_mode)
+
+        result = output['elapsed_time']
+
+        if with_extra_output:
+            extra = output['extra']
+            extra['int_time'] = output['int_time']
+            return (result, extra)
+
+        return result
+
+    def calculate_rms_for_elapsed_time(
+            self, elapsed_time,
+            receiver, map_mode, sw_mode,
+            freq, freq_res,
+            tau_225, zenith_angle_deg, is_dsb, dual_polarization,
+            n_points,
+            dim_x, dim_y, dx, dy, basket_weave,
+            separate_offs, continuum_mode,
+            with_extra_output=False):
+        """
+        Calculate the RMS obtained in a given elapsed time.
+
+        If "with_extra_output" is specified then a tuple of the
+        RMS and a dictionary of extra output is returned.
+        """
+
+        output = self._calculate(
+            calc_mode=self.ELAPSED_TO_RMS, input_=elapsed_time,
+            receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
+            freq=freq, freq_res=freq_res,
+            tau_225=tau_225, zenith_angle_deg=zenith_angle_deg,
+            is_dsb=is_dsb, dual_polarization=dual_polarization,
+            n_points=n_points,
+            dim_x=dim_x, dim_y=dim_y, dx=dx, dy=dy,
+            basket_weave=basket_weave, array_overscan=True,
+            separate_offs=separate_offs, continuum_mode=continuum_mode)
+
+        result = output['rms']
+
+        if with_extra_output:
+            extra = output['extra']
+            extra['int_time'] = output['int_time']
+            return (result, extra)
+
+        return result
+
+    def calculate_rms_for_int_time(
+            self, int_time,
+            receiver, map_mode, sw_mode,
+            freq, freq_res,
+            tau_225, zenith_angle_deg, is_dsb, dual_polarization,
+            n_points,
+            dim_x, dim_y, dx, dy, basket_weave,
+            separate_offs, continuum_mode,
+            with_extra_output=False):
+        """
+        Calculate the RMS obtained in a given integration time.
+
+        If "with_extra_output" is specified then a tuple of the
+        RMS and a dictionary of extra output is returned.
+        """
+
+        output = self._calculate(
+            calc_mode=self.INT_TIME_TO_RMS, input_=int_time,
+            receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
+            freq=freq, freq_res=freq_res,
+            tau_225=tau_225, zenith_angle_deg=zenith_angle_deg,
+            is_dsb=is_dsb, dual_polarization=dual_polarization,
+            n_points=n_points,
+            dim_x=dim_x, dim_y=dim_y, dx=dx, dy=dy,
+            basket_weave=basket_weave, array_overscan=True,
+            separate_offs=separate_offs, continuum_mode=continuum_mode)
+
+        result = output['rms']
+
+        if with_extra_output:
+            extra = output['extra']
+            extra['elapsed_time'] = output['elapsed_time']
+            return (result, extra)
+
+        return result
+
     def _calculate(
             self, calc_mode, input_,
             receiver, map_mode, sw_mode,
