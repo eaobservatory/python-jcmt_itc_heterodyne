@@ -24,7 +24,16 @@ from jcmt_itc_heterodyne import HeterodyneITC, HeterodyneReceiver
 
 
 class CalculateTest(TestCase):
-    def _test_calculation(self, rms, int_, elapsed, t_rx, t_sys, *args):
+    def _test_calculation(self, rms, int_, elapsed, t_rx, t_sys,
+                          *args, **kwargs):
+        """
+        The "tol_factor" kwarg can be used to ease the tolerance by a given
+        factor for the "integration time" calculated for elapsed time and
+        the elapsed time calculated from "integration time".  This is useful
+        in the case of basket-weaved rasters.
+        """
+
+        tol_factor = kwargs.get('tol_factor', 1.0)
         itc = HeterodyneITC()
 
         result = itc._calculate(HeterodyneITC.RMS_TO_TIME, rms, *args)
@@ -36,14 +45,16 @@ class CalculateTest(TestCase):
         result = itc._calculate(HeterodyneITC.ELAPSED_TO_RMS, elapsed, *args)
         self.assertAlmostEqual(result['extra']['t_rx'], t_rx, delta=0.1)
         self.assertAlmostEqual(result['extra']['t_sys'], t_sys, delta=0.1)
-        self.assertAlmostEqual(result['int_time'], int_, delta=0.01)
+        self.assertAlmostEqual(result['int_time'], int_,
+                               delta=(0.01 * tol_factor))
         self.assertAlmostEqual(result['rms'], rms, delta=0.1)
 
         result = itc._calculate(HeterodyneITC.INT_TIME_TO_RMS, int_, *args)
         self.assertAlmostEqual(result['extra']['t_rx'], t_rx, delta=0.1)
         self.assertAlmostEqual(result['extra']['t_sys'], t_sys, delta=0.1)
         self.assertAlmostEqual(result['rms'], rms, delta=0.1)
-        self.assertAlmostEqual(result['elapsed_time'], elapsed, delta=5)
+        self.assertAlmostEqual(result['elapsed_time'], elapsed,
+                               delta=(5 * tol_factor))
 
     def test_rxa(self):
         # RxA Grid PSSW
