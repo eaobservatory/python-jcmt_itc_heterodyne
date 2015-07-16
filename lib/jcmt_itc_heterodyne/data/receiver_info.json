@@ -4,6 +4,8 @@
         "f_max": 272,
         "n_mix": 1,
         "nu_tel": 0.91,
+        "ssb_available": false,
+        "dsb_available": true,
         "t_rx": [
             [211.0, 200],
             [212.0, 161],
@@ -79,6 +81,8 @@
         "f_max": 375,
         "n_mix": 1,
         "nu_tel": 0.9,
+        "ssb_available": true,
+        "dsb_available": false,
         "t_rx": [
             [325.0, 129.3],
             [329.3, 129.3],
@@ -117,6 +121,8 @@
         "f_max": 710,
         "n_mix": 2,
         "nu_tel": 0.65,
+        "ssb_available": true,
+        "dsb_available": false,
         "t_rx": [
             [635.537, 635.597],
             [637.222, 685.363],

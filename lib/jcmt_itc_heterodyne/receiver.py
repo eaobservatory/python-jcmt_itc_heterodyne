@@ -26,7 +26,8 @@ from pkgutil import get_data
 
 ReceiverInfo = namedtuple(
     'ReceiverInfo',
-    ('name', 'f_min', 'f_max', 'n_mix', 't_rx', 'nu_tel'))
+    ('name', 'f_min', 'f_max', 'n_mix', 'ssb_available', 'dsb_available',
+     'nu_tel', 't_rx'))
 
 
 class HeterodyneReceiver(object):
