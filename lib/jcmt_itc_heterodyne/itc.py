@@ -109,6 +109,7 @@ class HeterodyneITC(object):
         """
 
         self._check_mode(receiver, map_mode, sw_mode)
+        self._check_receiver_options(receiver, is_dsb, dual_polarization)
 
         extra_output = {}
 
@@ -224,6 +225,29 @@ class HeterodyneITC(object):
         if (map_mode, sw_mode) not in self.valid_modes:
             raise HeterodyneITCError(
                 'The combination of mapping and switching modes is invalid.')
+
+    def _check_receiver_options(self, receiver, is_dsb, dual_polarization):
+        """
+        Check whether the given receiver options are supported.
+
+        Raises HeterodyneITCError if a problem is found.
+        """
+
+        rx_info = HeterodyneReceiver.get_receiver_info(receiver)
+
+        if dual_polarization and (rx_info.n_mix < 2):
+            raise HeterodyneITCError(
+                'Dual polarization is not possible with this receiver.')
+
+        if is_dsb:
+            if not rx_info.dsb_available:
+                raise HeterodyneITCError(
+                    'This receiver does not support DSB operation.')
+
+        else:
+            if not rx_info.ssb_available:
+                raise HeterodyneITCError(
+                    'This receiver does not support SSB operation.')
 
     def _calculate_t_sys(
             self, receiver, freq, tau_225, zenith_angle_deg,
