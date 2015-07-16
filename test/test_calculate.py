@@ -190,3 +190,63 @@ class CalculateTest(TestCase):
             HeterodyneReceiver.WD, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             645, 0.061, 0.065, 45, False, True, None,
             400, 200, 5, 5, False, None, False, False)
+
+    def test_harp(self):
+        # HARP Grid PSSW
+
+        self._test_calculation(
+            0.05, 309.30, 837.8, 105, 339.6,
+            HeterodyneReceiver.HARP, HeterodyneITC.GRID, HeterodyneITC.PSSW,
+            345, 0.488, 0.1, 35, False, False, 1,
+            None, None, None, None, None, None, False, False)
+
+        # HARP Grid BMSW
+
+        self._test_calculation(
+            0.25, 115.70, 1745.3, 137.6, 1237.2,
+            HeterodyneReceiver.HARP, HeterodyneITC.GRID, HeterodyneITC.BMSW,
+            330, 0.488, 0.18, 55, False, False, 6,
+            None, None, None, None, None, None, False, False)
+
+        # HARP Jiggle PSSW
+
+        self._test_calculation(
+            0.2, 18.50, 598.0, 115.3, 595.0,
+            HeterodyneReceiver.HARP, HeterodyneITC.JIGGLE, HeterodyneITC.PSSW,
+            365, 0.977, 0.11, 45, False, False, 16,
+            None, None, None, None, None, None, False, False)
+
+        # HARP Jiggle BMSW
+
+        self._test_calculation(
+            0.2, 155.50, 6024.6, 111.1, 439.6,
+            HeterodyneReceiver.HARP, HeterodyneITC.JIGGLE, HeterodyneITC.BMSW,
+            355, 0.061, 0.11, 45, False, False, 25,
+            None, None, None, None, None, None, False, False)
+
+        # HARP Raster PSSW
+
+        self._test_calculation(
+            0.5, 9.60, 22906.3, 105.0, 1163.0,
+            HeterodyneReceiver.HARP, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
+            345, 0.977, 0.25, 50, False, False, None,
+            1800, 900, 7.27, 116.4, False, True, False, False)
+
+        self._test_calculation(
+            0.5, 9.7, 24221.8, 105.0, 1163.0,
+            HeterodyneReceiver.HARP, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
+            345, 0.977, 0.25, 50, False, False, None,
+            1800, 900, 7.27, 116.4, True, True, False, False,
+            tol_factor=10.0)
+
+        self._test_calculation(
+            0.5, 0.2, 1827.9, 137.6, 628.7,
+            HeterodyneReceiver.HARP, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
+            330, 0.977, 0.04, 75, False, False, None,
+            300, 400, 7.27, 7.3, False, True, False, False)
+
+        self._test_calculation(
+            0.75, 24.6, 25206.5, 113.8, 688.9,
+            HeterodyneReceiver.HARP, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
+            340, 0.0305, 0.065, 75, False, False, None,
+            800, 400, 7.27, 58.2, False, True, False, False)
