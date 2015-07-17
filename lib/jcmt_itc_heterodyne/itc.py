@@ -25,7 +25,7 @@ from math import acos, atan, cos, degrees, exp, radians, sqrt
 from .receiver import HeterodyneReceiver
 
 
-time_between_refs = 30.0
+default_time_between_refs = 30.0
 speed_of_light = 299792458
 
 
@@ -59,12 +59,15 @@ class HeterodyneITC(object):
     INT_TIME_TO_RMS = 2
     ELAPSED_TO_RMS = 3
 
-    def __init__(self):
+    def __init__(self, time_between_refs=None):
         """
         Construct ITC object.
         """
 
-        pass
+        if time_between_refs is None:
+            self.time_between_refs = default_time_between_refs
+        else:
+            self.time_between_refs = time_between_refs
 
     def get_valid_modes(self):
         """
@@ -510,7 +513,7 @@ class HeterodyneITC(object):
 
         # GRID PSSW forces shared if possible.
         if map_mode == self.GRID and sw_mode == self.PSSW:
-            np_shared = int(time_between_refs / time)
+            np_shared = int(self.time_between_refs / time)
 
             if np_shared < 1:
                 np_shared = 1
@@ -562,7 +565,7 @@ class HeterodyneITC(object):
 
         # GRID PSSW forces shared if possible.
         if map_mode == self.GRID and sw_mode == self.PSSW:
-            np_shared = int(time_between_refs / time)
+            np_shared = int(self.time_between_refs / time)
 
             if np_shared < 1:
                 np_shared = 1
@@ -581,7 +584,7 @@ class HeterodyneITC(object):
             if map_mode == self.GRID and sw_mode == self.PSSW:
                 np_shared_used = np_shared
 
-                np_shared = int(time_between_refs / time)
+                np_shared = int(self.time_between_refs / time)
 
                 if np_shared < 1:
                     np_shared = 1
