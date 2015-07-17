@@ -6,6 +6,7 @@
         "nu_tel": 0.91,
         "ssb_available": false,
         "dsb_available": true,
+        "pixel_size": 8.0,
         "array": null,
         "t_rx": [
             [211.0, 200],
@@ -84,9 +85,18 @@
         "nu_tel": 0.9,
         "ssb_available": true,
         "dsb_available": false,
+        "pixel_size": 7.27,
         "array": {
             "size": 120.0,
-            "f_angle": 14.036243468
+            "f_angle": 14.036243468,
+            "scan_spacings": [
+                ["Full array", 116.4],
+                ["3/4 array", 87.3],
+                ["1/2 array", 58.2],
+                ["1/4 array", 29.1],
+                ["1/8 array", 14.6],
+                ["Half beam", 7.3]
+            ]
         },
         "t_rx": [
             [325.0, 129.3],
@@ -128,6 +138,7 @@
         "nu_tel": 0.65,
         "ssb_available": true,
         "dsb_available": false,
+        "pixel_size": 3.0,
         "array": null,
         "t_rx": [
             [635.537, 635.597],

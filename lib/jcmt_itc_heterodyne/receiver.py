@@ -27,11 +27,11 @@ from pkgutil import get_data
 ReceiverInfo = namedtuple(
     'ReceiverInfo',
     ('name', 'f_min', 'f_max', 'n_mix', 'ssb_available', 'dsb_available',
-     'array', 'nu_tel', 't_rx'))
+     'pixel_size', 'array', 'nu_tel', 't_rx'))
 
 ArrayInfo = namedtuple(
     'ArrayInfo',
-    ('size', 'f_angle'))
+    ('size', 'f_angle', 'scan_spacings'))
 
 
 class HeterodyneReceiver(object):
@@ -216,7 +216,12 @@ class HeterodyneReceiver(object):
             info_obj = ReceiverInfo(name=name, **receiver_info)
 
             if info_obj.array is not None:
-                info_obj = info_obj._replace(array=ArrayInfo(**info_obj.array))
+                array_obj = ArrayInfo(**info_obj.array)
+
+                array_obj = array_obj._replace(
+                    scan_spacings=OrderedDict( array_obj.scan_spacings))
+
+                info_obj = info_obj._replace(array=array_obj)
 
             cls._info[receiver] = info_obj
 
