@@ -21,6 +21,7 @@ from __future__ import absolute_import, division, print_function, \
 
 from collections import namedtuple, OrderedDict
 import json
+from math import cos, radians
 from pkgutil import get_data
 
 
@@ -31,7 +32,7 @@ ReceiverInfo = namedtuple(
 
 ArrayInfo = namedtuple(
     'ArrayInfo',
-    ('size', 'f_angle', 'scan_spacings'))
+    ('size', 'f_angle', 'footprint', 'scan_spacings'))
 
 
 class HeterodyneReceiver(object):
@@ -216,10 +217,12 @@ class HeterodyneReceiver(object):
             info_obj = ReceiverInfo(name=name, **receiver_info)
 
             if info_obj.array is not None:
-                array_obj = ArrayInfo(**info_obj.array)
+                array_obj = ArrayInfo(footprint=None, **info_obj.array)
 
                 array_obj = array_obj._replace(
-                    scan_spacings=OrderedDict( array_obj.scan_spacings))
+                    scan_spacings=OrderedDict(array_obj.scan_spacings),
+                    footprint=(array_obj.size *
+                               cos(radians(array_obj.f_angle))))
 
                 info_obj = info_obj._replace(array=array_obj)
 
