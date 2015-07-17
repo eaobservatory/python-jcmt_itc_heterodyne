@@ -26,8 +26,6 @@ from .receiver import HeterodyneReceiver
 
 
 time_between_refs = 30.0
-harp_array_size = 120.0
-harp_f_angle = cos(atan(0.25))
 speed_of_light = 299792458
 
 
@@ -245,12 +243,13 @@ class HeterodyneITC(object):
         extra_output['t_sys'] = t_sys
 
         if map_mode == self.RASTER:
-            if receiver == HeterodyneReceiver.HARP and array_overscan:
-                overscan_x = 0.5 * harp_array_size
-            else:
-                overscan_x = 0.0
-
+            overscan_x = 0.0
             overscan_y = 0.0
+
+            array_info = HeterodyneReceiver.get_receiver_info(receiver).array
+
+            if (array_info is not None) and array_overscan:
+                overscan_x = 0.5 * array_info.size
 
             passes = 2 if basket_weave else 1
 
@@ -523,8 +522,10 @@ class HeterodyneITC(object):
         multiscan = 1.0
         # For arrays, if the dy is less than the footprint, take the
         # overlap into account when rasterizing.
-        if map_mode == self.RASTER and receiver == HeterodyneReceiver.HARP:
-            multiscan = 1.0 / sqrt(harp_array_size * harp_f_angle / dy)
+        array_info = HeterodyneReceiver.get_receiver_info(receiver).array
+        if (map_mode == self.RASTER) and (array_info is not None):
+            multiscan = 1.0 / sqrt(
+                array_info.size * cos(radians(array_info.f_angle)) / dy)
 
         rms = (
             multiscan * het_fudge * het_dfact *

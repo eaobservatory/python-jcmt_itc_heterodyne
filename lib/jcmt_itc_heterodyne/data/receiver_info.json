@@ -85,6 +85,8 @@
         "ssb_available": true,
         "dsb_available": false,
         "array": {
+            "size": 120.0,
+            "f_angle": 14.036243468
         },
         "t_rx": [
             [325.0, 129.3],

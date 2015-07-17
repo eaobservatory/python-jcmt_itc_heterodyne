@@ -31,7 +31,7 @@ ReceiverInfo = namedtuple(
 
 ArrayInfo = namedtuple(
     'ArrayInfo',
-    ())
+    ('size', 'f_angle'))
 
 
 class HeterodyneReceiver(object):
