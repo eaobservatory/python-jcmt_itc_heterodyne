@@ -268,6 +268,7 @@ class HeterodyneITC(object):
             if map_mode == self.RASTER:
                 if pass_ == 0:
                     # Non-basket weave, or primary basket-weave direction.
+                    # TODO: should probably be ceil rather than floor + 1
                     n_points = int((dim_x + 2 * overscan_x) / dx) + 1
                     n_rows = int((dim_y + 2 * overscan_y) / dy) + 1
 
@@ -275,6 +276,7 @@ class HeterodyneITC(object):
                     # Secondary basket-weave direction: scan along "dim_y"
                     # but with overscan_x / dx still along scan direction (y)
                     # (and overscan_y / dy still across scan direction (x)).
+                    # TODO: should probably be ceil rather than floor + 1
                     n_points = int((dim_y + 2 * overscan_x) / dx) + 1
                     n_rows = int((dim_x + 2 * overscan_y) / dy) + 1
 
