@@ -68,6 +68,15 @@ class HeterodyneITC(object):
 
         pass
 
+    def get_valid_modes(self):
+        """
+        Get set of valid observing modes.
+
+        Returns a set of (map_mode, sw_mode) tuples.
+        """
+
+        return self.valid_modes.copy()
+
     def velocity_to_freq_res(self, freq, velocity):
         """
         Convert a velocity (in km/s) to a frequency resolution

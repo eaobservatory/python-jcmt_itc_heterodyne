@@ -46,6 +46,13 @@ class HeterodyneReceiver(object):
                              (0.03, 0.05, 0.065, 0.1, 0.16, 0.2, 0.25)))
 
     @classmethod
+    def get_all_receivers(cls):
+        if not cls._info:
+            cls._read_receiver_info()
+
+        return cls._info.copy()
+
+    @classmethod
     def get_receiver_info(cls, receiver):
         if not cls._info:
             cls._read_receiver_info()
