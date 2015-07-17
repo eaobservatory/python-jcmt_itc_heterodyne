@@ -216,7 +216,7 @@ class HeterodyneITC(object):
         n_points should be specified directly.
         """
 
-        self._check_mode(receiver, map_mode, sw_mode)
+        self._check_mode(receiver, map_mode, sw_mode, separate_offs)
         self._check_receiver_options(receiver, is_dsb, dual_polarization)
 
         extra_output = {}
@@ -229,10 +229,6 @@ class HeterodyneITC(object):
         extra_output['t_sys'] = t_sys
 
         if map_mode == self.RASTER:
-            if separate_offs:
-                raise HeterodyneITCError(
-                    'Separate offs should not be used in raster mode.')
-
             if receiver == HeterodyneReceiver.HARP and array_overscan:
                 overscan_x = 0.5 * harp_array_size
             else:
@@ -323,7 +319,7 @@ class HeterodyneITC(object):
             'extra': extra_output,
         }
 
-    def _check_mode(self, receiver, map_mode, sw_mode):
+    def _check_mode(self, receiver, map_mode, sw_mode, separate_offs):
         """
         Check whether the given mode is supported.
 
@@ -333,6 +329,15 @@ class HeterodyneITC(object):
         if (map_mode, sw_mode) not in self.valid_modes:
             raise HeterodyneITCError(
                 'The combination of mapping and switching modes is invalid.')
+
+        if separate_offs:
+            if map_mode == self.RASTER:
+                raise HeterodyneITCError(
+                    'Separate offs should not be used in raster mode.')
+
+            elif map_mode == self.GRID and sw_mode == self.PSSW:
+                raise HeterodyneITCError(
+                    'Separate offs should not be used in grid pssw.')
 
     def _check_receiver_options(self, receiver, is_dsb, dual_polarization):
         """
