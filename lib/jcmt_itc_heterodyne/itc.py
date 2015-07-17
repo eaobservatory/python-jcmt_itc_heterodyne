@@ -20,7 +20,7 @@ from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
 from collections import namedtuple
-from math import atan, cos, exp, radians, sqrt
+from math import acos, atan, cos, degrees, exp, radians, sqrt
 
 from .receiver import HeterodyneReceiver
 
@@ -85,6 +85,13 @@ class HeterodyneITC(object):
 
         # Scale: 10^6 (MHz) / 10^9 (GHz) / 10^3 (km/s) = 10^-6
         return 1.0e-6 * speed_of_light * freq_res / freq
+
+    def estimate_zenith_angle_deg(self, declination_deg):
+        """
+        Estimate zenith angle for a source at a given declination.
+        """
+
+        return degrees(acos(0.9 * cos(radians(declination_deg - 19.823))))
 
     def calculate_time(
             self, rms,
