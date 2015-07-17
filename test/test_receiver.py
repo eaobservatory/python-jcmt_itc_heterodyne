@@ -22,7 +22,7 @@ from collections import OrderedDict
 from unittest import TestCase
 
 from jcmt_itc_heterodyne import HeterodyneReceiver
-from jcmt_itc_heterodyne.receiver import ReceiverInfo
+from jcmt_itc_heterodyne.receiver import ArrayInfo, ReceiverInfo
 
 
 class ReceiverTest(TestCase):
@@ -38,6 +38,11 @@ class ReceiverTest(TestCase):
     def test_receiver_info(self):
         info = HeterodyneReceiver.get_receiver_info(HeterodyneReceiver.HARP)
         self.assertIsInstance(info, ReceiverInfo)
+        self.assertIsInstance(info.array, ArrayInfo)
+
+        info = HeterodyneReceiver.get_receiver_info(HeterodyneReceiver.A3)
+        self.assertIsInstance(info, ReceiverInfo)
+        self.assertIsNone(info.array, ArrayInfo)
 
     def test_interpolated_t_rx(self):
         self.assertAlmostEqual(HeterodyneReceiver.get_interpolated_t_rx(

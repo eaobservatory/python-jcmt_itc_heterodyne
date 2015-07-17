@@ -27,7 +27,11 @@ from pkgutil import get_data
 ReceiverInfo = namedtuple(
     'ReceiverInfo',
     ('name', 'f_min', 'f_max', 'n_mix', 'ssb_available', 'dsb_available',
-     'nu_tel', 't_rx'))
+     'array', 'nu_tel', 't_rx'))
+
+ArrayInfo = namedtuple(
+    'ArrayInfo',
+    ())
 
 
 class HeterodyneReceiver(object):
@@ -209,7 +213,12 @@ class HeterodyneReceiver(object):
                 raise Exception('Could not find receiver information '
                                 'for "{0}".'.format(name))
 
-            cls._info[receiver] = ReceiverInfo(name=name, **receiver_info)
+            info_obj = ReceiverInfo(name=name, **receiver_info)
+
+            if info_obj.array is not None:
+                info_obj = info_obj._replace(array=ArrayInfo(**info_obj.array))
+
+            cls._info[receiver] = info_obj
 
     @classmethod
     def _read_tau_file(cls, tau):
