@@ -265,12 +265,25 @@ class HeterodyneITC(object):
         rmss = []
 
         for pass_ in range(0, passes):
+            dy_adjusted = dy
+
             if map_mode == self.RASTER:
                 if pass_ == 0:
                     # Non-basket weave, or primary basket-weave direction.
                     # TODO: should probably be ceil rather than floor + 1
                     n_points = int((dim_x + 2 * overscan_x) / dx) + 1
-                    n_rows = int((dim_y + 2 * overscan_y) / dy) + 1
+
+                    if ((array_info is not None) and
+                            ((dim_y + 2 * overscan_y) <=
+                                array_info.footprint)):
+                        # Map height less than array footprint: do one scan
+                        # and set dy=footprint to ensure multiscan factor is 1.
+                        # TODO: better to calculate multiscan here rather than
+                        # pass dy to calculation routines?
+                        n_rows = 1
+                        dy_adjusted = array_info.footprint
+                    else:
+                        n_rows = int((dim_y + 2 * overscan_y) / dy) + 1
 
                 else:
                     # Secondary basket-weave direction: scan along "dim_y"
@@ -278,7 +291,15 @@ class HeterodyneITC(object):
                     # (and overscan_y / dy still across scan direction (x)).
                     # TODO: should probably be ceil rather than floor + 1
                     n_points = int((dim_y + 2 * overscan_x) / dx) + 1
-                    n_rows = int((dim_x + 2 * overscan_y) / dy) + 1
+
+                    if ((array_info is not None) and
+                            ((dim_x + 2 * overscan_y)
+                                <= array_info.footprint)):
+                        # Map width less than footprint: as above for non-BW.
+                        n_rows = 1
+                        dy_adjusted = array_info.footprint
+                    else:
+                        n_rows = int((dim_x + 2 * overscan_y) / dy) + 1
 
             if calc_mode == self.RMS_TO_TIME:
                 int_time = self._integration_time_for_rms(
@@ -286,7 +307,7 @@ class HeterodyneITC(object):
                     receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
                     n_points=n_points, separate_offs=separate_offs,
                     dual_polarization=dual_polarization,
-                    t_sys=t_sys, freq_res=freq_res, dy=dy)
+                    t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
 
                 elapsed_time = self._elapsed_time_for_integration_time(
                     time=int_time, n_rows=n_rows,
@@ -303,7 +324,7 @@ class HeterodyneITC(object):
                     receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
                     n_points=n_points, separate_offs=separate_offs,
                     dual_polarization=dual_polarization,
-                    t_sys=t_sys, freq_res=freq_res, dy=dy)
+                    t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
 
                 elapsed_time = self._elapsed_time_for_integration_time(
                     time=input_, n_rows=n_rows,
@@ -326,7 +347,7 @@ class HeterodyneITC(object):
                     receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
                     n_points=n_points, separate_offs=separate_offs,
                     dual_polarization=dual_polarization,
-                    t_sys=t_sys, freq_res=freq_res, dy=dy)
+                    t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
 
                 int_times.append(int_time)
                 rmss.append(rms)
