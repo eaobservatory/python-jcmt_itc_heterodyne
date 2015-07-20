@@ -625,6 +625,7 @@ class HeterodyneITC(object):
                 time, receiver, map_mode, sw_mode,
                 n_points, separate_offs, *args, **kwargs)
 
+            # TODO: remove rounding to nearest 0.1 s?
             time = int(10 * time * (i_rms / rms) ** 2 + 0.5) / 10
 
             if map_mode == self.GRID and sw_mode == self.PSSW:
@@ -771,4 +772,5 @@ class HeterodyneITC(object):
             (elapsed / param.e - param.a - n_rows * param.d) /
             (n_rows * (param.b * n_points + param.c * sqrt(n_points))))
 
+        # TODO: remove rounding to nearest 0.1 s?
         return int(10 * time + 0.5) / 10
