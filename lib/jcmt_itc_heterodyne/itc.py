@@ -23,6 +23,7 @@ from collections import namedtuple
 from math import acos, atan, cos, degrees, exp, radians, sqrt
 
 from .receiver import HeterodyneReceiver
+from .version import version
 
 
 default_time_between_refs = 30.0
@@ -68,6 +69,13 @@ class HeterodyneITC(object):
             self.time_between_refs = default_time_between_refs
         else:
             self.time_between_refs = time_between_refs
+
+    def get_version(self):
+        """
+        Get the module version.
+        """
+
+        return version
 
     def get_valid_modes(self):
         """
