@@ -19,7 +19,7 @@
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from math import acos, atan, cos, degrees, exp, radians, sqrt
 
 from .receiver import HeterodyneReceiver
@@ -56,6 +56,14 @@ class HeterodyneITC(object):
         (RASTER, PSSW),
     ))
 
+    jiggle_patterns = OrderedDict((
+        ('3 x 3', 9),
+        ('5 x 5', 25),
+        ('7 x 7', 49),
+        ('9 x 9', 81),
+        ('11 x 11', 121),
+    ))
+
     RMS_TO_TIME = 1
     INT_TIME_TO_RMS = 2
     ELAPSED_TO_RMS = 3
@@ -85,6 +93,14 @@ class HeterodyneITC(object):
         """
 
         return self.valid_modes.copy()
+
+    def get_jiggle_patterns(self):
+        """
+        Get ordered dictionary of jiggle patterns for non-array
+        receivers.
+        """
+
+        return self.jiggle_patterns.copy()
 
     def velocity_to_freq_res(self, freq, velocity):
         """

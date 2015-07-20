@@ -96,6 +96,10 @@
                 ["1/4 array", 29.1],
                 ["1/8 array", 14.6],
                 ["Half beam", 7.3]
+            ],
+            "jiggle_patterns": [
+                ["HARP 4", 16],
+                ["HARP 5", 25]
             ]
         },
         "t_rx": [

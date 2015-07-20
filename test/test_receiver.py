@@ -39,6 +39,8 @@ class ReceiverTest(TestCase):
         info = HeterodyneReceiver.get_receiver_info(HeterodyneReceiver.HARP)
         self.assertIsInstance(info, ReceiverInfo)
         self.assertIsInstance(info.array, ArrayInfo)
+        self.assertIsInstance(info.array.jiggle_patterns, OrderedDict)
+        self.assertIsInstance(info.array.scan_spacings, OrderedDict)
 
         info = HeterodyneReceiver.get_receiver_info(HeterodyneReceiver.A3)
         self.assertIsInstance(info, ReceiverInfo)

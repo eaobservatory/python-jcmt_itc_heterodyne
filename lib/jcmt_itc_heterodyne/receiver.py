@@ -32,7 +32,7 @@ ReceiverInfo = namedtuple(
 
 ArrayInfo = namedtuple(
     'ArrayInfo',
-    ('size', 'f_angle', 'footprint', 'scan_spacings'))
+    ('size', 'f_angle', 'footprint', 'scan_spacings', 'jiggle_patterns'))
 
 
 class HeterodyneReceiver(object):
@@ -221,6 +221,7 @@ class HeterodyneReceiver(object):
 
                 array_obj = array_obj._replace(
                     scan_spacings=OrderedDict(array_obj.scan_spacings),
+                    jiggle_patterns=OrderedDict(array_obj.jiggle_patterns),
                     footprint=(array_obj.size *
                                cos(radians(array_obj.f_angle))))
 
