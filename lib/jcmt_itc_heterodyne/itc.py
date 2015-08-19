@@ -68,6 +68,8 @@ class HeterodyneITC(object):
     INT_TIME_TO_RMS = 2
     ELAPSED_TO_RMS = 3
 
+    int_time_minimum = 0.1
+
     def __init__(self, time_between_refs=None):
         """
         Construct ITC object.
@@ -333,6 +335,8 @@ class HeterodyneITC(object):
                     dual_polarization=dual_polarization,
                     t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
 
+                self._check_int_time(int_time, 'requested target sensitivity')
+
                 elapsed_time = self._elapsed_time_for_integration_time(
                     time=int_time, n_rows=n_rows,
                     map_mode=map_mode, sw_mode=sw_mode,
@@ -343,6 +347,15 @@ class HeterodyneITC(object):
                 elapsed_times.append(elapsed_time)
 
             elif calc_mode == self.INT_TIME_TO_RMS:
+                if input_ < self.int_time_minimum:
+                    raise HeterodyneITCError(
+                        'The requested integration time per point '
+                        'is less than {0:.3f} seconds which is the minimum '
+                        'possible sample time. '
+                        'Please increase the integration time per point '
+                        'to at least {0:.3f} seconds.'.format(
+                            self.int_time_minimum))
+
                 rms = self._rms_in_integration_time(
                     time=input_,
                     receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
@@ -365,6 +378,8 @@ class HeterodyneITC(object):
                     map_mode=map_mode, sw_mode=sw_mode,
                     n_points=n_points, separate_offs=separate_offs,
                     continuum_mode=continuum_mode)
+
+                self._check_int_time(int_time, 'requested elapsed time')
 
                 rms = self._rms_in_integration_time(
                     time=int_time,
@@ -426,6 +441,25 @@ class HeterodyneITC(object):
             if not rx_info.ssb_available:
                 raise HeterodyneITCError(
                     'This receiver does not support SSB operation.')
+
+    def _check_int_time(self, int_time, origin):
+        """
+        Check whether the integration time is allowed.
+
+        Raises HeterodyneITCError if it is less than 0.1.
+
+        The "origin" is used in the text of the error message.
+        """
+
+        if int_time < self.int_time_minimum:
+            raise HeterodyneITCError(
+                'The {} led to an integration time of {:.3f} seconds per '
+                'point. '
+                'This is less than {:.3f} seconds which is the minimum '
+                'possible sample time. '
+                'Please try adjusting the input parameters to '
+                'increase the integration time per point.'.format(
+                    origin, int_time, self.int_time_minimum))
 
     def _calculate_t_sys(
             self, receiver, freq, tau_225, zenith_angle_deg,
