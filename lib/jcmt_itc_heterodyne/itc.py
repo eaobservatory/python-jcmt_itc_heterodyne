@@ -449,15 +449,7 @@ class HeterodyneITC(object):
             extra_output['t_rx'] = t_rx
             extra_output['tau'] = tau
 
-        # To duplicate behavior of HITEC, round the tau value.
-        # It is unclear why HITEC does this!
-        # TODO: remove this?
-        if tau < 0.1:
-            rounded_tau = round(tau, 3)
-        else:
-            rounded_tau = round(tau, 2)
-
-        nu_sky = exp(- rounded_tau / cos(radians(zenith_angle_deg)))
+        nu_sky = exp(- tau / cos(radians(zenith_angle_deg)))
 
         t_sky = 260.0 * (1 - nu_sky)
 
