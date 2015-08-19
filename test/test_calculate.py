@@ -151,13 +151,13 @@ class CalculateTest(TestCase):
         # RxW Grid PSSW
 
         self._test_calculation(
-            2.5, 41.90, 11183.5, 478.4, 2208.2,
+            2.5, 43.00, 11475.0, 478.4, 2236.9,
             HeterodyneReceiver.WD, HeterodyneITC.GRID, HeterodyneITC.PSSW,
             670, 0.0610, 0.04, 30, False, False, 100,
             None, None, None, None, None, False, False)
 
         self._test_calculation(
-            2.5, 20.90, 5618.5, 478.4, 2208.2,
+            2.5, 21.50, 5777.5, 478.4, 2236.9,
             HeterodyneReceiver.WD, HeterodyneITC.GRID, HeterodyneITC.PSSW,
             670, 0.0610, 0.04, 30, False, True, 100,
             None, None, None, None, None, False, False)
@@ -189,7 +189,7 @@ class CalculateTest(TestCase):
         # RxW Raster PSSW
 
         self._test_calculation(
-            5.0, 34.20, 133325.9, 632.1, 7570.6,
+            5.0, 35.20, 137200.4, 632.1, 7682.1,
             HeterodyneReceiver.WD, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             645, 0.061, 0.065, 45, False, True, None,
             400, 200, 5, 5, False, False, False)
