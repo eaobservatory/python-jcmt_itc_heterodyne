@@ -62,25 +62,25 @@ class CalculateTest(TestCase):
     def test_rxa(self):
         # RxA Grid PSSW
         self._test_calculation(
-            0.6, 77.10, 5187.9, 62.0, 403.5,
+            0.6, 78.70, 5293.9, 62.0, 407.8,
             HeterodyneReceiver.A3, HeterodyneITC.GRID, HeterodyneITC.PSSW,
             233, 0.0192, 0.23, 25, True, False, 25,
             None, None, None, None, None, False, False)
 
         self._test_calculation(
-            0.6, 42.00, 2862.5, 62.0, 298.0,
+            0.6, 41.40, 2822.8, 62.0, 295.6,
             HeterodyneReceiver.A3, HeterodyneITC.GRID, HeterodyneITC.PSSW,
             233, 0.0192, 0.12, 25, True, False, 25,
             None, None, None, None, None, False, False)
 
         self._test_calculation(
-            0.2, 574.00, 76135.0, 85.0, 367.0,
+            0.2, 590.70, 78347.8, 85.0, 372.3,
             HeterodyneReceiver.A3, HeterodyneITC.GRID, HeterodyneITC.PSSW,
             215, 0.0192, 0.12, 45, True, False, 50,
             None, None, None, None, None, False, False)
 
         self._test_calculation(
-            0.2, 13.20, 604.7, 62.0, 303.5,
+            0.2, 12.90, 592.8, 62.0, 300.0,
             HeterodyneReceiver.A3, HeterodyneITC.GRID, HeterodyneITC.PSSW,
             266, 0.488, 0.09, 30, True, False, 15,
             None, None, None, None, None, False, False)
@@ -88,19 +88,19 @@ class CalculateTest(TestCase):
         # RxA Grid BMSW
 
         self._test_calculation(
-            0.2, 13.80, 1702.6, 96.0, 379.8,
+            0.2, 13.80, 1702.6, 96.0, 379.6,
             HeterodyneReceiver.A3, HeterodyneITC.GRID, HeterodyneITC.BMSW,
             260, 0.488, 0.09, 30, True, False, 49,
             None, None, None, None, None, False, False)
 
         self._test_calculation(
-            0.2, 24.20, 2910.3, 96.0, 379.8,
+            0.2, 24.20, 2910.3, 96.0, 379.6,
             HeterodyneReceiver.A3, HeterodyneITC.GRID, HeterodyneITC.BMSW,
             260, 0.488, 0.09, 30, True, False, 49,
             None, None, None, None, None, True, False)
 
         self._test_calculation(
-            0.2, 24.20, 3492.4, 96.0, 379.8,
+            0.2, 24.20, 3492.4, 96.0, 379.6,
             HeterodyneReceiver.A3, HeterodyneITC.GRID, HeterodyneITC.BMSW,
             260, 0.488, 0.09, 30, True, False, 49,
             None, None, None, None, None, True, True)
@@ -108,13 +108,13 @@ class CalculateTest(TestCase):
         # RxA Jiggle BMSW
 
         self._test_calculation(
-            0.25, 417.90, 6468.8, 185.0, 604.3,
+            0.25, 425.30, 6581.6, 185.0, 609.6,
             HeterodyneReceiver.A3, HeterodyneITC.JIGGLE, HeterodyneITC.BMSW,
             250, 0.0305, 0.11, 20, True, False, 9,
             None, None, None, None, None, False, False)
 
         self._test_calculation(
-            0.15, 394.3, 22772.2, 79.0, 287.5,
+            0.15, 394.7, 22795.2, 79.0, 287.7,
             HeterodyneReceiver.A3, HeterodyneITC.JIGGLE, HeterodyneITC.BMSW,
             240, 0.0305, 0.07, 10, True, False, 25,
             None, None, None, None, None, True, False)
@@ -122,13 +122,13 @@ class CalculateTest(TestCase):
         # RxA Jiggle PSSW
 
         self._test_calculation(
-            0.3, 144.3, 17403.2, 68.0, 347.9,
+            0.3, 145.6, 17559.3, 68.0, 349.5,
             HeterodyneReceiver.A3, HeterodyneITC.JIGGLE, HeterodyneITC.PSSW,
             235, 0.0305, 0.03, 80, True, False, 49,
             None, None, None, None, None, True, False)
 
         self._test_calculation(
-            0.05, 46.4, 6657.2, 68.0, 249.6,
+            0.05, 46.5, 6671.4, 68.0, 250.0,
             HeterodyneReceiver.A3, HeterodyneITC.JIGGLE, HeterodyneITC.PSSW,
             235, 0.977, 0.03, 60, True, False, 81,
             None, None, None, None, None, False, False)
@@ -136,28 +136,29 @@ class CalculateTest(TestCase):
         # RxA Raster PSSW
 
         self._test_calculation(
-            1.5, 4.90, 3827.9, 73.0, 405.5,
+            1.5, 4.70, 3697.7, 73.0, 398.9,
             HeterodyneReceiver.A3, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             220, 0.0305, 0.15, 50, True, False, None,
             150, 300, 10, 10, False, False, False)
 
         self._test_calculation(
-            1.5, 4.75, 3510.9, 73.0, 405.5,
+            1.5, 4.60, 3415.1, 73.0, 398.9,
             HeterodyneReceiver.A3, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             220, 0.0305, 0.15, 50, True, False, None,
-            150, 300, 10, 10, True, False, False)
+            150, 300, 10, 10, True, False, False,
+            tol_factor=10.0)
 
     def test_rxw(self):
         # RxW Grid PSSW
 
         self._test_calculation(
-            2.5, 43.00, 11475.0, 478.4, 2236.9,
+            2.5, 43.10, 11501.5, 478.4, 2240.0,
             HeterodyneReceiver.WD, HeterodyneITC.GRID, HeterodyneITC.PSSW,
             670, 0.0610, 0.04, 30, False, False, 100,
             None, None, None, None, None, False, False)
 
         self._test_calculation(
-            2.5, 21.50, 5777.5, 478.4, 2236.9,
+            2.5, 21.50, 5777.5, 478.4, 2240.0,
             HeterodyneReceiver.WD, HeterodyneITC.GRID, HeterodyneITC.PSSW,
             670, 0.0610, 0.04, 30, False, True, 100,
             None, None, None, None, None, False, False)
@@ -165,7 +166,7 @@ class CalculateTest(TestCase):
         # RxW Grid BMSW
 
         self._test_calculation(
-            3.5, 26.80, 5244.8, 636.1, 4693.2,
+            3.5, 26.90, 5264.0, 636.1, 4705.7,
             HeterodyneReceiver.WD, HeterodyneITC.GRID, HeterodyneITC.BMSW,
             640, 0.0610, 0.06, 20, False, True, 81,
             None, None, None, None, None, False, False)
@@ -173,7 +174,7 @@ class CalculateTest(TestCase):
         # RxW Jiggle BMSW
 
         self._test_calculation(
-            0.75, 118.70, 19998.9, 544.9, 1510.7,
+            0.75, 118.50, 19965.3, 544.9, 1509.3,
             HeterodyneReceiver.WD, HeterodyneITC.JIGGLE, HeterodyneITC.BMSW,
             690, 0.0305, 0.02, 10, False, True, 121,
             None, None, None, None, None, False, False)
@@ -181,7 +182,7 @@ class CalculateTest(TestCase):
         # RxW Jiggle PSSW
 
         self._test_calculation(
-            4.5, 148.50, 3354.4, 521.8, 21172.4,
+            4.5, 148.20, 3347.8, 521.8, 21151.5,
             HeterodyneReceiver.WD, HeterodyneITC.JIGGLE, HeterodyneITC.PSSW,
             700, 0.488, 0.11, 15, False, False, 9,
             None, None, None, None, None, True, False)
@@ -189,7 +190,7 @@ class CalculateTest(TestCase):
         # RxW Raster PSSW
 
         self._test_calculation(
-            5.0, 35.20, 137200.4, 632.1, 7682.1,
+            5.0, 34.70, 135263.2, 632.1, 7626.2,
             HeterodyneReceiver.WD, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             645, 0.061, 0.065, 45, False, True, None,
             400, 200, 5, 5, False, False, False)
