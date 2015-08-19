@@ -20,7 +20,8 @@ from __future__ import absolute_import, division, print_function, \
 
 from unittest import TestCase
 
-from jcmt_itc_heterodyne import HeterodyneITC, HeterodyneReceiver
+from jcmt_itc_heterodyne import HeterodyneITC, HeterodyneITCError, \
+    HeterodyneReceiver
 
 
 class CalculateTest(TestCase):
@@ -254,3 +255,28 @@ class CalculateTest(TestCase):
             HeterodyneReceiver.HARP, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             340, 0.0305, 0.065, 75, False, False, None,
             800, 400, 7.27, 58.2, False, False, False)
+
+    def test_int_time_limit(self):
+        itc = HeterodyneITC()
+        args = [
+            HeterodyneReceiver.HARP, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
+            330, 0.977, 0.04, 75, False, False, None,
+            300, 400, 7.27, 7.3, False, False, False,
+        ]
+
+        with self.assertRaisesRegexp(
+                HeterodyneITCError,
+                '^The requested integration time per point is less than'):
+
+            itc.calculate_rms_for_int_time(0.09, *args)
+
+        with self.assertRaisesRegexp(
+                HeterodyneITCError,
+                '^The requested target sensitivity led to an integration t'):
+            itc.calculate_time(1.0, *args)
+
+        with self.assertRaisesRegexp(
+                HeterodyneITCError,
+                '^The requested elapsed time led to an integration t'):
+
+            itc.calculate_rms_for_elapsed_time(500, *args)
