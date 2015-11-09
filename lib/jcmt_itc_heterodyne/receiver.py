@@ -28,7 +28,7 @@ from pkgutil import get_data
 ReceiverInfo = namedtuple(
     'ReceiverInfo',
     ('name', 'f_min', 'f_max', 'n_mix', 'ssb_available', 'dsb_available',
-     'pixel_size', 'array', 'nu_tel', 't_rx'))
+     'pixel_size', 'array', 'eta_tel', 't_rx'))
 
 ArrayInfo = namedtuple(
     'ArrayInfo',

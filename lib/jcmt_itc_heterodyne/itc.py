@@ -483,13 +483,13 @@ class HeterodyneITC(object):
             extra_output['t_rx'] = t_rx
             extra_output['tau'] = tau
 
-        nu_sky = exp(- tau / cos(radians(zenith_angle_deg)))
+        eta_sky = exp(- tau / cos(radians(zenith_angle_deg)))
 
-        t_sky = 260.0 * (1 - nu_sky)
+        t_sky = 260.0 * (1 - eta_sky)
 
-        nu_tel = HeterodyneReceiver.get_receiver_info(receiver).nu_tel
+        eta_tel = HeterodyneReceiver.get_receiver_info(receiver).eta_tel
 
-        t_tel = 265.0 * (1 - nu_tel)
+        t_tel = 265.0 * (1 - eta_tel)
 
         if not is_dsb:
             # Single sideband mode.
@@ -500,8 +500,8 @@ class HeterodyneITC(object):
                 # for the tau and elevation in question.  Previous calculation
                 # was:
                 # t_sys = (
-                #     (t_rx + nu_tel * t_sky + t_tel + t_im) /
-                #     (nu_sky * nu_tel))
+                #     (t_rx + eta_tel * t_sky + t_tel + t_im) /
+                #     (eta_sky * eta_tel))
 
                 # For 345.796 GHz reference:
                 ref_freq = 345.796
@@ -509,17 +509,17 @@ class HeterodyneITC(object):
                 ref_t_atm = 260
                 ref_t_amb = 265
                 ref_f_850 = 3.3
-                ref_nu_tel = 0.9
+                ref_eta_tel = 0.9
 
-                ref_nu_sky = exp(- ref_f_850 * tau_225 /
-                                 cos(radians(zenith_angle_deg)))
+                ref_eta_sky = exp(- ref_f_850 * tau_225 /
+                                  cos(radians(zenith_angle_deg)))
 
-                ref_t_sky = ref_t_atm * (1 - ref_nu_sky)
-                ref_t_tel = ref_t_amb * (1 - ref_nu_tel)
+                ref_t_sky = ref_t_atm * (1 - ref_eta_sky)
+                ref_t_tel = ref_t_amb * (1 - ref_eta_tel)
 
                 t_sys_345 = (
-                    (ref_t_rx + ref_nu_tel * ref_t_sky + ref_t_tel) /
-                    (ref_nu_sky * ref_nu_tel))
+                    (ref_t_rx + ref_eta_tel * ref_t_sky + ref_t_tel) /
+                    (ref_eta_sky * ref_eta_tel))
 
                 c2 = 3.75 - 3.66 * exp(-tau_225 /
                                        cos(radians(zenith_angle_deg)))
@@ -541,8 +541,8 @@ class HeterodyneITC(object):
 
             else:
                 return (
-                    (t_rx + nu_tel * t_sky + t_tel + t_im) /
-                    (nu_sky * nu_tel))
+                    (t_rx + eta_tel * t_sky + t_tel + t_im) /
+                    (eta_sky * eta_tel))
 
         else:
             # Dual sideband mode.
@@ -553,11 +553,13 @@ class HeterodyneITC(object):
                 # which could be half of the SSB T_Rx.  (t_rx = t_rx / 2.0)
 
                 return (
-                    2.0 * (t_rx + nu_tel * t_sky + t_tel) / (nu_sky * nu_tel))
+                    2.0 * (t_rx + eta_tel * t_sky + t_tel) /
+                    (eta_sky * eta_tel))
 
             else:
                 return (
-                    2.0 * (t_rx + nu_tel * t_sky + t_tel) / (nu_sky * nu_tel))
+                    2.0 * (t_rx + eta_tel * t_sky + t_tel) /
+                    (eta_sky * eta_tel))
 
     def _rms_in_integration_time(
             self, time,
