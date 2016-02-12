@@ -528,12 +528,8 @@ class HeterodyneITC(object):
 
                 x = freq - 345.796
 
-                if freq < 329.5:
-                    c0 *= 1.5
-                elif freq < 333:
+                if freq < 333:
                     c0 *= 1.1
-                elif freq > 372:
-                    c0 *= 2.5
                 elif freq > 366.25:
                     c0 *= 1.7
 
