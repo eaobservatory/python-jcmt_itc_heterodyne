@@ -526,7 +526,7 @@ class HeterodyneITC(object):
                 c1 = -2.0
                 c0 = t_sys_345 + 15
 
-                x = freq - 345.796
+                x = freq - ref_freq
 
                 if freq < 333:
                     c0 *= 1.1
