@@ -18,7 +18,7 @@
 from distutils.core import setup
 import sys
 
-sys.path.append('lib')
+sys.path.insert(0, 'lib')
 from jcmt_itc_heterodyne.version import version
 
 with open('README.rst') as f:
