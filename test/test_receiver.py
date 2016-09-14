@@ -19,10 +19,16 @@ from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
 from collections import OrderedDict
+from sys import version_info
 from unittest import TestCase
 
 from jcmt_itc_heterodyne import HeterodyneReceiver
 from jcmt_itc_heterodyne.receiver import ArrayInfo, ReceiverInfo
+
+if version_info[0] < 3:
+    string_type = unicode
+else:
+    string_type = str
 
 
 class ReceiverTest(TestCase):
@@ -33,7 +39,7 @@ class ReceiverTest(TestCase):
 
         for (receiver, name) in names.items():
             self.assertIsInstance(receiver, int)
-            self.assertIsInstance(name, unicode)
+            self.assertIsInstance(name, string_type)
 
     def test_receiver_info(self):
         info = HeterodyneReceiver.get_receiver_info(HeterodyneReceiver.HARP)

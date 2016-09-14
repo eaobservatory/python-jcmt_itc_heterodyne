@@ -19,6 +19,7 @@
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
+from codecs import latin_1_decode
 from collections import namedtuple, OrderedDict
 import json
 from math import cos, radians
@@ -199,8 +200,8 @@ class HeterodyneReceiver(object):
             (cls.WD, 'RxWD'),
         ]
 
-        receiver_data = json.loads(
-            get_data('jcmt_itc_heterodyne', 'data/receiver_info.json'))
+        receiver_data = json.loads(latin_1_decode(
+            get_data('jcmt_itc_heterodyne', 'data/receiver_info.json'))[0])
 
         for (receiver, name) in receiver_names:
             receiver_info = receiver_data.get(name)
