@@ -1,5 +1,5 @@
 # Copyright (C) 2007-2009 Science and Technology Facilities Council.
-# Copyright (C) 2015 East Asian Observatory
+# Copyright (C) 2015-2017 East Asian Observatory
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -262,142 +262,159 @@ class HeterodyneITC(object):
         self._check_mode(receiver, map_mode, sw_mode, separate_offs)
         self._check_receiver_options(receiver, is_dsb, dual_polarization)
 
-        extra_output = {}
+        try:
+            extra_output = {}
 
-        t_sys = self._calculate_t_sys(
-            receiver=receiver, freq=freq, tau_225=tau_225,
-            zenith_angle_deg=zenith_angle_deg, is_dsb=is_dsb,
-            extra_output=extra_output)
+            t_sys = self._calculate_t_sys(
+                receiver=receiver, freq=freq, tau_225=tau_225,
+                zenith_angle_deg=zenith_angle_deg, is_dsb=is_dsb,
+                extra_output=extra_output)
 
-        extra_output['t_sys'] = t_sys
-
-        if map_mode == self.RASTER:
-            overscan_x = 0.0
-            overscan_y = 0.0
-
-            array_info = HeterodyneReceiver.get_receiver_info(receiver).array
-
-            if (array_info is not None) and array_overscan:
-                overscan_x = 0.5 * array_info.size
-
-            passes = 2 if basket_weave else 1
-
-        else:
-            passes = 1
-            n_rows = 1
-
-        int_times = []
-        elapsed_times = []
-        rmss = []
-
-        for pass_ in range(0, passes):
-            dy_adjusted = dy
+            extra_output['t_sys'] = t_sys
 
             if map_mode == self.RASTER:
-                if pass_ == 0:
-                    # Non-basket weave, or primary basket-weave direction.
-                    # TODO: should probably be ceil rather than floor + 1
-                    n_points = int((dim_x + 2 * overscan_x) / dx) + 1
+                overscan_x = 0.0
+                overscan_y = 0.0
 
-                    if ((array_info is not None) and
-                            ((dim_y + 2 * overscan_y) <=
-                                array_info.footprint)):
-                        # Map height less than array footprint: do one scan
-                        # and set dy=footprint to ensure multiscan factor is 1.
-                        # TODO: better to calculate multiscan here rather than
-                        # pass dy to calculation routines?
-                        n_rows = 1
-                        dy_adjusted = array_info.footprint
+                array_info = HeterodyneReceiver.get_receiver_info(
+                    receiver).array
+
+                if (array_info is not None) and array_overscan:
+                    overscan_x = 0.5 * array_info.size
+
+                passes = 2 if basket_weave else 1
+
+            else:
+                passes = 1
+                n_rows = 1
+
+            int_times = []
+            elapsed_times = []
+            rmss = []
+
+            for pass_ in range(0, passes):
+                dy_adjusted = dy
+
+                if map_mode == self.RASTER:
+                    if pass_ == 0:
+                        # Non-basket weave, or primary basket-weave direction.
+                        # TODO: should probably be ceil rather than floor + 1
+                        n_points = int((dim_x + 2 * overscan_x) / dx) + 1
+
+                        if ((array_info is not None) and
+                                ((dim_y + 2 * overscan_y) <=
+                                    array_info.footprint)):
+                            # Map height less than array footprint: do one scan
+                            # and set dy=footprint to ensure multiscan factor
+                            # is 1.
+                            # TODO: better to calculate multiscan here rather
+                            # than pass dy to calculation routines?
+                            n_rows = 1
+                            dy_adjusted = array_info.footprint
+                        else:
+                            n_rows = int((dim_y + 2 * overscan_y) / dy) + 1
+
                     else:
-                        n_rows = int((dim_y + 2 * overscan_y) / dy) + 1
+                        # Secondary basket-weave direction: scan along "dim_y"
+                        # but with overscan_x / dx
+                        # still along scan direction (y)
+                        # (and overscan_y / dy
+                        # still across scan direction (x)).
+                        # TODO: should probably be ceil rather than floor + 1
+                        n_points = int((dim_y + 2 * overscan_x) / dx) + 1
 
-                else:
-                    # Secondary basket-weave direction: scan along "dim_y"
-                    # but with overscan_x / dx still along scan direction (y)
-                    # (and overscan_y / dy still across scan direction (x)).
-                    # TODO: should probably be ceil rather than floor + 1
-                    n_points = int((dim_y + 2 * overscan_x) / dx) + 1
+                        if ((array_info is not None) and
+                                ((dim_x + 2 * overscan_y)
+                                    <= array_info.footprint)):
+                            # Map width < footprint: as above for non-BW.
+                            n_rows = 1
+                            dy_adjusted = array_info.footprint
+                        else:
+                            n_rows = int((dim_x + 2 * overscan_y) / dy) + 1
 
-                    if ((array_info is not None) and
-                            ((dim_x + 2 * overscan_y)
-                                <= array_info.footprint)):
-                        # Map width less than footprint: as above for non-BW.
-                        n_rows = 1
-                        dy_adjusted = array_info.footprint
-                    else:
-                        n_rows = int((dim_x + 2 * overscan_y) / dy) + 1
+                if calc_mode == self.RMS_TO_TIME:
+                    int_time = self._integration_time_for_rms(
+                        rms=input_,
+                        receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
+                        n_points=n_points, separate_offs=separate_offs,
+                        dual_polarization=dual_polarization,
+                        t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
 
-            if calc_mode == self.RMS_TO_TIME:
-                int_time = self._integration_time_for_rms(
-                    rms=input_,
-                    receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
-                    n_points=n_points, separate_offs=separate_offs,
-                    dual_polarization=dual_polarization,
-                    t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
+                    self._check_int_time(
+                        int_time, 'requested target sensitivity')
 
-                self._check_int_time(int_time, 'requested target sensitivity')
+                    elapsed_time = self._elapsed_time_for_integration_time(
+                        time=int_time, n_rows=n_rows,
+                        map_mode=map_mode, sw_mode=sw_mode,
+                        n_points=n_points, separate_offs=separate_offs,
+                        continuum_mode=continuum_mode)
 
-                elapsed_time = self._elapsed_time_for_integration_time(
-                    time=int_time, n_rows=n_rows,
-                    map_mode=map_mode, sw_mode=sw_mode,
-                    n_points=n_points, separate_offs=separate_offs,
-                    continuum_mode=continuum_mode)
+                    int_times.append(int_time)
+                    elapsed_times.append(elapsed_time)
 
-                int_times.append(int_time)
-                elapsed_times.append(elapsed_time)
+                elif calc_mode == self.INT_TIME_TO_RMS:
+                    if input_ < self.int_time_minimum:
+                        raise HeterodyneITCError(
+                            'The requested integration time per point '
+                            'is less than {0:.3f} seconds which is the '
+                            'minimum possible sample time. '
+                            'Please increase the integration time per point '
+                            'to at least {0:.3f} seconds.'.format(
+                                self.int_time_minimum))
 
-            elif calc_mode == self.INT_TIME_TO_RMS:
-                if input_ < self.int_time_minimum:
-                    raise HeterodyneITCError(
-                        'The requested integration time per point '
-                        'is less than {0:.3f} seconds which is the minimum '
-                        'possible sample time. '
-                        'Please increase the integration time per point '
-                        'to at least {0:.3f} seconds.'.format(
-                            self.int_time_minimum))
+                    rms = self._rms_in_integration_time(
+                        time=input_,
+                        receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
+                        n_points=n_points, separate_offs=separate_offs,
+                        dual_polarization=dual_polarization,
+                        t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
 
-                rms = self._rms_in_integration_time(
-                    time=input_,
-                    receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
-                    n_points=n_points, separate_offs=separate_offs,
-                    dual_polarization=dual_polarization,
-                    t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
+                    elapsed_time = self._elapsed_time_for_integration_time(
+                        time=input_, n_rows=n_rows,
+                        map_mode=map_mode, sw_mode=sw_mode,
+                        n_points=n_points, separate_offs=separate_offs,
+                        continuum_mode=continuum_mode)
 
-                elapsed_time = self._elapsed_time_for_integration_time(
-                    time=input_, n_rows=n_rows,
-                    map_mode=map_mode, sw_mode=sw_mode,
-                    n_points=n_points, separate_offs=separate_offs,
-                    continuum_mode=continuum_mode)
+                    rmss.append(rms)
+                    elapsed_times.append(elapsed_time)
 
-                rmss.append(rms)
-                elapsed_times.append(elapsed_time)
+                elif calc_mode == self.ELAPSED_TO_RMS:
+                    int_time = self._integration_time_for_elapsed_time(
+                        elapsed=input_, n_rows=n_rows,
+                        map_mode=map_mode, sw_mode=sw_mode,
+                        n_points=n_points, separate_offs=separate_offs,
+                        continuum_mode=continuum_mode)
 
-            elif calc_mode == self.ELAPSED_TO_RMS:
-                int_time = self._integration_time_for_elapsed_time(
-                    elapsed=input_, n_rows=n_rows,
-                    map_mode=map_mode, sw_mode=sw_mode,
-                    n_points=n_points, separate_offs=separate_offs,
-                    continuum_mode=continuum_mode)
+                    self._check_int_time(int_time, 'requested elapsed time')
 
-                self._check_int_time(int_time, 'requested elapsed time')
+                    rms = self._rms_in_integration_time(
+                        time=int_time,
+                        receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
+                        n_points=n_points, separate_offs=separate_offs,
+                        dual_polarization=dual_polarization,
+                        t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
 
-                rms = self._rms_in_integration_time(
-                    time=int_time,
-                    receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
-                    n_points=n_points, separate_offs=separate_offs,
-                    dual_polarization=dual_polarization,
-                    t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
+                    int_times.append(int_time)
+                    rmss.append(rms)
 
-                int_times.append(int_time)
-                rmss.append(rms)
+            return {
+                'rms': None if not rmss else (sum(rmss) / passes),
+                'int_time': None if not int_times else (
+                    sum(int_times) / passes),
+                'elapsed_time': None if not elapsed_times else (
+                    sum(elapsed_times) / passes),
+                'extra': extra_output,
+            }
 
-        return {
-            'rms': None if not rmss else (sum(rmss) / passes),
-            'int_time': None if not int_times else (sum(int_times) / passes),
-            'elapsed_time': None if not elapsed_times else (
-                sum(elapsed_times) / passes),
-            'extra': extra_output,
-        }
+        except ZeroDivisionError:
+            raise HeterodyneITCError(
+                'Division by zero error occurred during calculation.')
+
+        except ValueError as e:
+            if e.args[0] == 'math domain error':
+                raise HeterodyneITCError(
+                    'Negative square root error occurred during calculation.')
+            raise
 
     def _check_mode(self, receiver, map_mode, sw_mode, separate_offs):
         """
