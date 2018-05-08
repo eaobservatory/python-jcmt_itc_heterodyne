@@ -1,5 +1,5 @@
 # Copyright (C) 2007-2009 Science and Technology Facilities Council.
-# Copyright (C) 2015-2017 East Asian Observatory
+# Copyright (C) 2015-2018 East Asian Observatory
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -68,6 +68,9 @@ class HeterodyneITC(object):
     INT_TIME_TO_RMS = 2
     ELAPSED_TO_RMS = 3
 
+    RV_DEF_OPT = 1
+    RV_DEF_RAD = 2
+
     int_time_minimum = 0.1
 
     def __init__(self, time_between_refs=None):
@@ -121,6 +124,25 @@ class HeterodyneITC(object):
 
         # Scale: 10^6 (MHz) / 10^9 (GHz) / 10^3 (km/s) = 10^-6
         return 1.0e-6 * speed_of_light * freq_res / freq
+
+    def velocity_to_redshift(self, velocity, velocity_definition):
+        """
+        Convert a radial velocity (in km/s) to a reshift value.
+        """
+
+        # Scale: 10^3 (km/s)
+        v = velocity * 1.0e3
+
+        if v >= speed_of_light:
+            raise HeterodyneITCError('Radial velocity is too high.')
+
+        if velocity_definition == self.RV_DEF_OPT:
+            return v / speed_of_light
+
+        elif velocity_definition == self.RV_DEF_RAD:
+            return v / (speed_of_light - v)
+
+        raise HeterodyneITCError('Invalid radial velocity definition.')
 
     def estimate_zenith_angle_deg(self, declination_deg):
         """
