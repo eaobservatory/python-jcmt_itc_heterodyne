@@ -32,5 +32,8 @@ setup(
     url='https://github.com/eaobservatory/python-jcmt_itc_heterodyne',
     package_dir={'': 'lib'},
     packages=['jcmt_itc_heterodyne'],
-    package_data={'jcmt_itc_heterodyne': ['data/receiver_info.json',
-                                          'data/*.dat']})
+    package_data={'jcmt_itc_heterodyne': [
+        'data/receiver_info.json',
+        'data/*.dat',
+        'data/line_catalog.xml',
+    ]})

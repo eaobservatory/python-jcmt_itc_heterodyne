@@ -65,7 +65,7 @@ def get_line_catalog():
         species_list = []
 
         doc = etree.fromstring(get_data(
-            'jcmt_itc_heterodyne', 'data/lineCatalog.xml'))
+            'jcmt_itc_heterodyne', 'data/line_catalog.xml'))
 
         for species in doc.findall('species'):
             species_name = element_attr(species, 'name')
