@@ -645,7 +645,7 @@ class HeterodyneITC(object):
             sqrt(freq_res * 1.0e6 * time))
 
         # Apply correction for dual polarization.
-        if receiver == HeterodyneReceiver.WD and dual_polarization:
+        if dual_polarization:
             rms /= sqrt(2.0)
 
         return rms
