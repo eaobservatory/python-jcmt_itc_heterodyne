@@ -19,7 +19,7 @@
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
-from codecs import latin_1_decode
+from codecs import utf_8_decode
 from collections import namedtuple, OrderedDict
 import json
 from math import cos, radians
@@ -40,6 +40,9 @@ class HeterodyneReceiver(object):
     A3 = 1
     HARP = 2
     WD = 3
+    ALAIHI = 4
+    UU = 5
+    AWEOWEO = 6
 
     # Data structure holding information for each receiver.  To be filled
     # the first time the data are needed.
@@ -195,12 +198,15 @@ class HeterodyneReceiver(object):
         # List specifying how to map the receiver names to the "enum" values
         # used by this class.  (And the ordering in which to display them.)
         receiver_names = [
-            (cls.A3, 'RxA3'),
             (cls.HARP, 'HARP'),
+            # (cls.ALAIHI, 'Ala \u02bbihi'),
+            (cls.UU, 'U\u02bbu'),
+            (cls.AWEOWEO, 'Aweoweo'),
+            (cls.A3, 'RxA3'),
             (cls.WD, 'RxWD'),
         ]
 
-        receiver_data = json.loads(latin_1_decode(
+        receiver_data = json.loads(utf_8_decode(
             get_data('jcmt_itc_heterodyne', 'data/receiver_info.json'))[0])
 
         for (receiver, name) in receiver_names:

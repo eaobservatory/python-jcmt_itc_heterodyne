@@ -1,4 +1,47 @@
 {
+    "Ala ʻihi": {
+        "f_min": 85.0,
+        "f_max": 87.0,
+        "n_mix": 2,
+        "eta_tel": 0.5,
+        "ssb_available": true,
+        "dsb_available": false,
+        "pixel_size": 29.3,
+        "array": null,
+        "t_rx": [
+        ]
+    },
+
+    "Uʻu": {
+        "f_min": 212.0,
+        "f_max": 274.0,
+        "n_mix": 2,
+        "eta_tel": 0.7,
+        "ssb_available": true,
+        "dsb_available": false,
+        "pixel_size": 10.9,
+        "array": null,
+        "t_rx": [
+            [211.0, 55.0],
+            [275.0, 55.0]
+        ]
+    },
+
+    "Aweoweo": {
+        "f_min": 276.0,
+        "f_max": 372.0,
+        "n_mix": 2,
+        "eta_tel": 0.55,
+        "ssb_available": true,
+        "dsb_available": false,
+        "pixel_size": 7.29,
+        "array": null,
+        "t_rx": [
+            [275.0, 75.0],
+            [373.0, 75.0]
+        ]
+    },
+
     "RxA3": {
         "f_min": 211.5,
         "f_max": 276.5,
