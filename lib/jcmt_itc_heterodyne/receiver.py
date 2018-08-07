@@ -199,9 +199,9 @@ class HeterodyneReceiver(object):
         # used by this class.  (And the ordering in which to display them.)
         receiver_names = [
             (cls.HARP, 'HARP'),
-            # (cls.ALAIHI, 'Ala \u02bbihi'),
-            (cls.UU, 'U\u02bbu'),
-            (cls.AWEOWEO, 'Aweoweo'),
+            # (cls.ALAIHI, '\u02bbAla\u02bbihi'),
+            (cls.UU, '\u02bb\u016a\u02bb\u016b'),
+            (cls.AWEOWEO, '\u02bb\u0100weoweo'),
             (cls.A3, 'RxA3'),
             (cls.WD, 'RxWD'),
         ]
