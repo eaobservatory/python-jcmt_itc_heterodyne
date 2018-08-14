@@ -79,7 +79,7 @@ def main():
         if nr is not None:
             with open(os.path.join(
                     dir_, 'rxinfo_{}.json'.format(date_str)), 'w') as f:
-                json.dump(nr, f)
+                json.dump(nr, f, indent=4, separators=(',', ': '))
 
         date = date + timedelta(days=1)
 
