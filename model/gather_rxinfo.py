@@ -125,12 +125,14 @@ def read_night(utdate):
 
 
 def take_average(values):
-    ans = values[0]
+    avg_keys = ['t_sys', 't_rx']
+    ans = {k: v for (k, v) in values[0].items() if k not in avg_keys}
 
-    if len(values) > 1:
-        for param in ['t_sys', 't_rx']:
-            ans[param] = np.array(
-                [x[param] for x in values]).mean(axis=0).tolist()
+    for param in avg_keys:
+        concat = np.concatenate([x[param] for x in values], axis=0)
+
+        ans[param] = concat.mean(axis=0).tolist()
+        ans[param + '_med'] = np.median(concat, axis=0).tolist()
 
     return ans
 
@@ -148,8 +150,8 @@ def read_file(filename):
     loc.annul()
 
     return {
-        't_sys': np.average(t_sys, axis=0).tolist(),
-        't_rx': np.average(t_rx, axis=0).tolist(),
+        't_sys': t_sys,
+        't_rx': t_rx,
         'recep': recep.tolist(),
     }
 
