@@ -3,7 +3,7 @@
         "f_min": 85.0,
         "f_max": 87.0,
         "n_mix": 2,
-        "eta_tel": 0.5,
+        "eta_tel": 0.9,
         "ssb_available": true,
         "dsb_available": false,
         "pixel_size": 29.3,
@@ -16,14 +16,14 @@
         "f_min": 212.0,
         "f_max": 274.0,
         "n_mix": 2,
-        "eta_tel": 0.7,
+        "eta_tel": 0.9,
         "ssb_available": true,
         "dsb_available": false,
         "pixel_size": 10.9,
         "array": null,
         "t_rx": [
-            [211.0, 55.0],
-            [275.0, 55.0]
+            [210.0, 60.0],
+            [275.0, 85.0]
         ]
     },
 
@@ -31,7 +31,7 @@
         "f_min": 276.0,
         "f_max": 372.0,
         "n_mix": 2,
-        "eta_tel": 0.55,
+        "eta_tel": 0.9,
         "ssb_available": true,
         "dsb_available": false,
         "pixel_size": 7.29,
