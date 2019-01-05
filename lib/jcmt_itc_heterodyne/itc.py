@@ -518,11 +518,12 @@ class HeterodyneITC(object):
         tau = HeterodyneReceiver.get_interpolated_opacity(
             tau_225=tau_225, freq=freq)
 
+        eta_sky = exp(- tau / cos(radians(zenith_angle_deg)))
+
         if extra_output is not None:
             extra_output['t_rx'] = t_rx
             extra_output['tau'] = tau
-
-        eta_sky = exp(- tau / cos(radians(zenith_angle_deg)))
+            extra_output['eta_sky'] = eta_sky
 
         t_sky = 260.0 * (1 - eta_sky)
 
