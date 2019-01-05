@@ -107,6 +107,7 @@ def combine_rx_db(rxinfo, obsinfo):
                 out_key = (recep, obs['obs_sb'])
                 out_data = [obs[x] for x in ['utdate', 'obsnum', 'subsysnr', 'lofreq', 'iffreq', 'rffreq']]
                 out_data.extend([t_rx, t_sys])
+                out_data.extend(obs[x] for x in ['wvmtau', 'elevation'])
 
                 output[out_key].append(out_data)
 
@@ -149,12 +150,16 @@ def query_db(date_start, date_end, instrument):
 
     with omp.db.transaction() as c:
         c.execute(
-            'SELECT utdate, obsnum, subsysnr, obs_sb, iffreq,'
-            ' (lofreqs + lofreqe) / 2 AS lofreq,'
-            ' (freq_sig_lower + freq_sig_upper) / 2 AS rffreq'
+            'SELECT utdate, obsnum, subsysnr, obs_sb, iffreq'
+            ', (lofreqs + lofreqe) / 2 AS lofreq'
+            ', (freq_sig_lower + freq_sig_upper) / 2 AS rffreq'
+            ', (wvmtaust + wvmtauen) / 2 AS wvmtau'
+            ', (elstart + elend) / 2 AS elevation'
             ' FROM jcmt.COMMON JOIN jcmt.ACSIS ON COMMON.obsid = ACSIS.obsid'
             ' WHERE (utdate BETWEEN %s AND %s)'
-            ' AND INSTRUME = %s', [
+            ' AND INSTRUME = %s'
+            ' ORDER BY utdate ASC, obsnum ASC, subsysnr ASC',
+            [
                 int(date_start.strftime('%Y%m%d')),
                 int(date_end.strftime('%Y%m%d')),
                 instrument,
