@@ -51,8 +51,10 @@ class HeterodyneITC(object):
     valid_modes = set((
         (GRID, PSSW),
         (GRID, BMSW),
+        (GRID, FRSW),
         (JIGGLE, PSSW),
         (JIGGLE, BMSW),
+        (JIGGLE, FRSW),
         (RASTER, PSSW),
     ))
 
@@ -782,6 +784,11 @@ class HeterodyneITC(object):
             b = 1.05
             c = 1.05
             d = 18
+
+        elif (sw_mode == self.FRSW and (
+                map_mode == self.JIGGLE or map_mode == self.GRID)):
+            a = 67
+            b = 1.023
 
         else:
             raise HeterodyneITCError(
