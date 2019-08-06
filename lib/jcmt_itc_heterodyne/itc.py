@@ -515,7 +515,7 @@ class HeterodyneITC(object):
         t_im = 0.0
 
         t_rx = HeterodyneReceiver.get_interpolated_t_rx(
-            receiver=receiver, freq=freq)
+            receiver=receiver, sky_freq=freq, extra_output=extra_output)
 
         tau = HeterodyneReceiver.get_interpolated_opacity(
             tau_225=tau_225, freq=freq)

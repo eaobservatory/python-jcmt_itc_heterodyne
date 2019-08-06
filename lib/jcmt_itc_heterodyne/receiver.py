@@ -1,5 +1,5 @@
 # Copyright (C) 2007-2009 Science and Technology Facilities Council.
-# Copyright (C) 2015 East Asian Observatory
+# Copyright (C) 2015-2019 East Asian Observatory
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,8 +28,8 @@ from pkgutil import get_data
 
 ReceiverInfo = namedtuple(
     'ReceiverInfo',
-    ('name', 'f_min', 'f_max', 'n_mix', 'ssb_available', 'dsb_available',
-     'pixel_size', 'array', 'eta_tel', 't_rx'))
+    ('name', 'f_min', 'f_max', 'f_if', 'n_mix', 'ssb_available', 'dsb_available',
+     'pixel_size', 'array', 'eta_tel', 't_rx', 't_rx_lo', 'best_sideband'))
 
 ArrayInfo = namedtuple(
     'ArrayInfo',
@@ -78,18 +78,73 @@ class HeterodyneReceiver(object):
         ))
 
     @classmethod
-    def get_interpolated_t_rx(cls, receiver, freq):
+    def get_interpolated_t_rx(
+            cls, receiver, sky_freq,
+            if_freq=None, sideband=None,
+            extra_output=None):
         """
         Get an interpolated receiver temperature value.
 
         Outside the range of data values given in the "receiver_info.json"
         file, the first or last values are given as appropriate.
+
+        "extra_output" can optionally be a dictionary into which extra
+        data are written.
         """
 
+        info = cls.get_receiver_info(receiver)
+
+        if not info.t_rx_lo:
+            # Older t_rx data are tabulated directly in terms of sky frequency.
+            freq = sky_freq
+
+        else:
+            # The receiver has t_rx data tabulated in terms of LO frequency,
+            # so we need to determine the IF frequency and sideband.  If these
+            # are not specified, infer them and add them to "extra_output".
+            if if_freq is None:
+                if_freq = info.f_if
+                if extra_output is not None:
+                    extra_output['if_freq'] = if_freq
+
+            if sideband is None:
+                sideband = cls._find_best_sideband(info, sky_freq)
+                if extra_output is not None:
+                    extra_output['sideband'] = sideband
+
+            if sideband == 'LSB':
+                freq = sky_freq + if_freq
+            elif sideband == 'USB':
+                freq = sky_freq - if_freq
+            else:
+                raise Exception('Sideband {0} not recognized'.format(sideband))
+
+            if extra_output is not None:
+                extra_output['lo_freq'] = freq
+
+        return cls._interpolate_trx_data(info, freq)
+
+    @classmethod
+    def _find_best_sideband(cls, info, sky_freq):
+        is_lsb = True
+
+        if info.best_sideband is None:
+            raise Exception('Receiver does not have preferred sideband data')
+
+        for freq_transition in info.best_sideband:
+            if sky_freq < freq_transition:
+                break
+
+            is_lsb = not is_lsb
+
+        return 'LSB' if is_lsb else 'USB'
+
+    @classmethod
+    def _interpolate_trx_data(cls, info, freq):
         freq_prev = None
         t_rx_prev = None
 
-        for (freq_i, t_rx_i) in cls.get_receiver_info(receiver).t_rx:
+        for (freq_i, t_rx_i) in info.t_rx:
             if freq <= freq_i:
                 if freq_prev is None:
                     # This is the first value, so return it immediately.
