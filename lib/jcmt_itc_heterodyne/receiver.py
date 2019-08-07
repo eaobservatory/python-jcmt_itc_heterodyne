@@ -28,7 +28,8 @@ from pkgutil import get_data
 
 ReceiverInfo = namedtuple(
     'ReceiverInfo',
-    ('name', 'f_min', 'f_max', 'f_if', 'n_mix', 'ssb_available', 'dsb_available',
+    ('name', 'f_min', 'f_max', 'f_if', 'n_mix',
+     'ssb_available', 'dsb_available', 'frsw_available',
      'pixel_size', 'array', 'eta_tel', 't_rx', 't_rx_lo', 'best_sideband'))
 
 ArrayInfo = namedtuple(

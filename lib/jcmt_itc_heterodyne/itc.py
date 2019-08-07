@@ -284,7 +284,8 @@ class HeterodyneITC(object):
         """
 
         self._check_mode(receiver, map_mode, sw_mode, separate_offs)
-        self._check_receiver_options(receiver, is_dsb, dual_polarization)
+        self._check_receiver_options(
+            receiver, is_dsb, dual_polarization, sw_mode)
 
         try:
             extra_output = {}
@@ -460,7 +461,8 @@ class HeterodyneITC(object):
                 raise HeterodyneITCError(
                     'Separate offs should not be used in grid pssw.')
 
-    def _check_receiver_options(self, receiver, is_dsb, dual_polarization):
+    def _check_receiver_options(
+            self, receiver, is_dsb, dual_polarization, sw_mode):
         """
         Check whether the given receiver options are supported.
 
@@ -482,6 +484,11 @@ class HeterodyneITC(object):
             if not rx_info.ssb_available:
                 raise HeterodyneITCError(
                     'This receiver does not support SSB operation.')
+
+        if sw_mode == self.FRSW:
+            if not rx_info.frsw_available:
+                raise HeterodyneITCError(
+                    'This receiver does not support frequency switching.')
 
     def _check_int_time(self, int_time, origin):
         """
