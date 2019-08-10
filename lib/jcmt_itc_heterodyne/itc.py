@@ -74,6 +74,8 @@ class HeterodyneITC(object):
     RV_DEF_RAD = 2
 
     int_time_minimum = 0.1
+    if_freq_minimum = 4.0
+    if_freq_maximum = 7.3
 
     def __init__(self, time_between_refs=None):
         """
@@ -161,6 +163,7 @@ class HeterodyneITC(object):
             n_points,
             dim_x, dim_y, dx, dy, basket_weave,
             separate_offs, continuum_mode,
+            if_freq=None, sideband=None,
             with_extra_output=False):
         """
         Calculate the observing time required for a given RMS.
@@ -178,7 +181,8 @@ class HeterodyneITC(object):
             n_points=n_points,
             dim_x=dim_x, dim_y=dim_y, dx=dx, dy=dy,
             basket_weave=basket_weave, array_overscan=True,
-            separate_offs=separate_offs, continuum_mode=continuum_mode)
+            separate_offs=separate_offs, continuum_mode=continuum_mode,
+            if_freq=if_freq, sideband=sideband)
 
         result = output['elapsed_time']
 
@@ -197,6 +201,7 @@ class HeterodyneITC(object):
             n_points,
             dim_x, dim_y, dx, dy, basket_weave,
             separate_offs, continuum_mode,
+            if_freq=None, sideband=None,
             with_extra_output=False):
         """
         Calculate the RMS obtained in a given elapsed time.
@@ -214,7 +219,8 @@ class HeterodyneITC(object):
             n_points=n_points,
             dim_x=dim_x, dim_y=dim_y, dx=dx, dy=dy,
             basket_weave=basket_weave, array_overscan=True,
-            separate_offs=separate_offs, continuum_mode=continuum_mode)
+            separate_offs=separate_offs, continuum_mode=continuum_mode,
+            if_freq=if_freq, sideband=sideband)
 
         result = output['rms']
 
@@ -233,6 +239,7 @@ class HeterodyneITC(object):
             n_points,
             dim_x, dim_y, dx, dy, basket_weave,
             separate_offs, continuum_mode,
+            if_freq=None, sideband=None,
             with_extra_output=False):
         """
         Calculate the RMS obtained in a given integration time.
@@ -250,7 +257,8 @@ class HeterodyneITC(object):
             n_points=n_points,
             dim_x=dim_x, dim_y=dim_y, dx=dx, dy=dy,
             basket_weave=basket_weave, array_overscan=True,
-            separate_offs=separate_offs, continuum_mode=continuum_mode)
+            separate_offs=separate_offs, continuum_mode=continuum_mode,
+            if_freq=if_freq, sideband=sideband)
 
         result = output['rms']
 
@@ -268,7 +276,7 @@ class HeterodyneITC(object):
             tau_225, zenith_angle_deg, is_dsb, dual_polarization,
             n_points,
             dim_x, dim_y, dx, dy, basket_weave, array_overscan,
-            separate_offs, continuum_mode):
+            separate_offs, continuum_mode, if_freq, sideband):
         """
         Perform ITC calculation.
 
@@ -285,7 +293,7 @@ class HeterodyneITC(object):
 
         self._check_mode(receiver, map_mode, sw_mode, separate_offs)
         self._check_receiver_options(
-            receiver, is_dsb, dual_polarization, sw_mode)
+            receiver, is_dsb, dual_polarization, sw_mode, if_freq, sideband)
 
         try:
             extra_output = {}
@@ -293,6 +301,7 @@ class HeterodyneITC(object):
             t_sys = self._calculate_t_sys(
                 receiver=receiver, freq=freq, tau_225=tau_225,
                 zenith_angle_deg=zenith_angle_deg, is_dsb=is_dsb,
+                if_freq=if_freq, sideband=sideband,
                 extra_output=extra_output)
 
             extra_output['t_sys'] = t_sys
@@ -462,7 +471,8 @@ class HeterodyneITC(object):
                     'Separate offs should not be used in grid pssw.')
 
     def _check_receiver_options(
-            self, receiver, is_dsb, dual_polarization, sw_mode):
+            self, receiver, is_dsb, dual_polarization, sw_mode,
+            if_freq, sideband):
         """
         Check whether the given receiver options are supported.
 
@@ -490,6 +500,24 @@ class HeterodyneITC(object):
                 raise HeterodyneITCError(
                     'This receiver does not support frequency switching.')
 
+        if if_freq is not None:
+            if not (self.if_freq_minimum <= if_freq <= self.if_freq_maximum):
+                raise HeterodyneITCError(
+                    'The requested intermediate frequency is not within '
+                    'the available range ({} - {} GHz).'.format(
+                        self.if_freq_minimum, self.if_freq_maximum))
+
+        if sideband is not None:
+            if sideband not in ('LSB', 'USB'):
+                raise HeterodyneITCError(
+                    'The requested sideband was not recognized.')
+
+        if (if_freq is not None) or (sideband is not None):
+            if not rx_info.t_rx_lo:
+                raise HeterodyneITCError(
+                    'An IF or sideband was specified but the receiver '
+                    'temperature data is not available by LO frequency.')
+
     def _check_int_time(self, int_time, origin):
         """
         Check whether the integration time is allowed.
@@ -511,7 +539,7 @@ class HeterodyneITC(object):
 
     def _calculate_t_sys(
             self, receiver, freq, tau_225, zenith_angle_deg,
-            is_dsb, extra_output=None):
+            is_dsb, if_freq, sideband, extra_output=None):
         """
         Calculate the system temperature.
 
@@ -522,7 +550,9 @@ class HeterodyneITC(object):
         t_im = 0.0
 
         t_rx = HeterodyneReceiver.get_interpolated_t_rx(
-            receiver=receiver, sky_freq=freq, extra_output=extra_output)
+            receiver=receiver, sky_freq=freq,
+            if_freq=if_freq, sideband=sideband,
+            extra_output=extra_output)
 
         tau = HeterodyneReceiver.get_interpolated_opacity(
             tau_225=tau_225, freq=freq)

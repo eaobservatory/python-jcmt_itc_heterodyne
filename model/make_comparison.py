@@ -124,7 +124,7 @@ def apply_itc(info):
 
             t_sys = itc._calculate_t_sys(
                 receiver, entry['rffreq'], entry['wvmtau'], 90 - entry['elevation'], False,
-                extra_output=output)
+                if_freq=None, sideband=None, extra_output=output)
 
             output['t_sys'] = t_sys
 
