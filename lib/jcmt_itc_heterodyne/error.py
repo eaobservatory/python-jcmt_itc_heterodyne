@@ -19,6 +19,5 @@ from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
 
-from .error import HeterodyneITCError
-from .itc import HeterodyneITC
-from .receiver import HeterodyneReceiver
+class HeterodyneITCError(Exception):
+    pass

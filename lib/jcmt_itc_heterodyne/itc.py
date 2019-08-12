@@ -22,6 +22,7 @@ from __future__ import absolute_import, division, print_function, \
 from collections import namedtuple, OrderedDict
 from math import acos, atan, cos, degrees, exp, radians, sqrt
 
+from .error import HeterodyneITCError
 from .receiver import HeterodyneReceiver
 from .version import version
 
@@ -33,10 +34,6 @@ speed_of_light = 299792458
 DurationParam = namedtuple(
     'DurationParam',
     ('a', 'b', 'c', 'd', 'e'))
-
-
-class HeterodyneITCError(Exception):
-    pass
 
 
 class HeterodyneITC(object):
