@@ -1,4 +1,4 @@
-# Copyright (C) 2015 East Asian Observatory
+# Copyright (C) 2015-2019 East Asian Observatory
 # All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or modify it under
@@ -51,6 +51,15 @@ class ReceiverTest(TestCase):
         info = HeterodyneReceiver.get_receiver_info(HeterodyneReceiver.A3)
         self.assertIsInstance(info, ReceiverInfo)
         self.assertIsNone(info.array, ArrayInfo)
+
+        receivers = HeterodyneReceiver.get_all_receivers()
+        self.assertIsInstance(receivers, OrderedDict)
+
+        for (receiver, info) in receivers.items():
+            self.assertIsInstance(receiver, int)
+
+            self.assertLessEqual(info.f_if, info.f_if_max)
+            self.assertGreaterEqual(info.f_if, info.f_if_min)
 
     def test_interpolated_t_rx(self):
         self.assertAlmostEqual(HeterodyneReceiver.get_interpolated_t_rx(

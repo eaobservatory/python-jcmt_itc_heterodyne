@@ -25,10 +25,12 @@ import json
 from math import cos, radians
 from pkgutil import get_data
 
+from .error import HeterodyneITCError
+
 
 ReceiverInfo = namedtuple(
     'ReceiverInfo',
-    ('name', 'f_min', 'f_max', 'f_if', 'n_mix',
+    ('name', 'f_min', 'f_max', 'f_if', 'f_if_min', 'f_if_max', 'n_mix',
      'ssb_available', 'dsb_available', 'frsw_available',
      'pixel_size', 'array', 'eta_tel', 't_rx', 't_rx_lo', 'best_sideband'))
 
@@ -99,6 +101,11 @@ class HeterodyneReceiver(object):
             # Older t_rx data are tabulated directly in terms of sky frequency.
             freq = sky_freq
 
+            if (if_freq is not None) or (sideband is not None):
+                raise HeterodyneITCError(
+                    'An IF or sideband was specified but the receiver '
+                    'temperature data is not available by LO frequency.')
+
         else:
             # The receiver has t_rx data tabulated in terms of LO frequency,
             # so we need to determine the IF frequency and sideband.  If these
@@ -108,17 +115,42 @@ class HeterodyneReceiver(object):
                 if extra_output is not None:
                     extra_output['if_freq'] = if_freq
 
+            elif not (info.f_if_min <= if_freq <= info.f_if_max):
+                raise HeterodyneITCError(
+                    'The requested intermediate frequency is not within '
+                    'the available range ({} - {} GHz).'.format(
+                        info.f_if_min, info.f_if_max))
+
             if sideband is None:
                 sideband = cls._find_best_sideband(info, sky_freq)
                 if extra_output is not None:
                     extra_output['sideband'] = sideband
 
+            # Check the sideband selection and calculate the LO frequency.
+            # Maybe it would be better to have frequency limits in terms
+            # of LO frequency, but currently we have them as sky frequency
+            # (and the web interface checks them).  For now do a rough check of
+            # whether we are too close to the end of the band to use the
+            # requested sideband.
             if sideband == 'LSB':
                 freq = sky_freq + if_freq
+
+                if sky_freq > (info.f_max - 2.0 * info.f_if):
+                    raise HeterodyneITCError(
+                        'The requested frequency may be too high to '
+                        'observe in the lower sideband.')
+
             elif sideband == 'USB':
                 freq = sky_freq - if_freq
+
+                if sky_freq < (info.f_min + 2.0 * info.f_if):
+                    raise HeterodyneITCError(
+                        'The requested frequency may be too low to '
+                        'observe in the upper sideband.')
+
             else:
-                raise Exception('Sideband {0} not recognized'.format(sideband))
+                raise HeterodyneITCError(
+                    'The requested sideband was not recognized.')
 
             if extra_output is not None:
                 extra_output['lo_freq'] = freq

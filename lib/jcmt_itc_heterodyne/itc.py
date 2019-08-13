@@ -71,8 +71,6 @@ class HeterodyneITC(object):
     RV_DEF_RAD = 2
 
     int_time_minimum = 0.1
-    if_freq_minimum = 4.0
-    if_freq_maximum = 7.3
 
     def __init__(self, time_between_refs=None):
         """
@@ -290,7 +288,7 @@ class HeterodyneITC(object):
 
         self._check_mode(receiver, map_mode, sw_mode, separate_offs)
         self._check_receiver_options(
-            receiver, is_dsb, dual_polarization, sw_mode, if_freq, sideband)
+            receiver, is_dsb, dual_polarization, sw_mode)
 
         try:
             extra_output = {}
@@ -468,8 +466,7 @@ class HeterodyneITC(object):
                     'Separate offs should not be used in grid pssw.')
 
     def _check_receiver_options(
-            self, receiver, is_dsb, dual_polarization, sw_mode,
-            if_freq, sideband):
+            self, receiver, is_dsb, dual_polarization, sw_mode):
         """
         Check whether the given receiver options are supported.
 
@@ -496,24 +493,6 @@ class HeterodyneITC(object):
             if not rx_info.frsw_available:
                 raise HeterodyneITCError(
                     'This receiver does not support frequency switching.')
-
-        if if_freq is not None:
-            if not (self.if_freq_minimum <= if_freq <= self.if_freq_maximum):
-                raise HeterodyneITCError(
-                    'The requested intermediate frequency is not within '
-                    'the available range ({} - {} GHz).'.format(
-                        self.if_freq_minimum, self.if_freq_maximum))
-
-        if sideband is not None:
-            if sideband not in ('LSB', 'USB'):
-                raise HeterodyneITCError(
-                    'The requested sideband was not recognized.')
-
-        if (if_freq is not None) or (sideband is not None):
-            if not rx_info.t_rx_lo:
-                raise HeterodyneITCError(
-                    'An IF or sideband was specified but the receiver '
-                    'temperature data is not available by LO frequency.')
 
     def _check_int_time(self, int_time, origin):
         """
