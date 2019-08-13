@@ -55,7 +55,7 @@ Here is an example time calculation for a HARP jiggle-chop observation:
             with_extra_output=True)
 
         print('Main result: {}'.format(result))
-        print('Extra informat: {}'.format(extra))
+        print('Extra information: {!r}'.format(extra))
 
     except HeterodyneITCError as e:
         print('Error: {}'.format(e))
