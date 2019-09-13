@@ -631,8 +631,9 @@ class HeterodyneITC(object):
         # "Correlation factor".
         het_dfact = 1.23
 
-        # Set np_shared to 1 if separate offs requested.
-        if separate_offs:
+        # Set np_shared to 1 if separate offs requested, or if mode
+        # is FRSW as it does not have offset positions.
+        if separate_offs or (sw_mode == self.FRSW):
             np_shared = 1
         else:
             np_shared = n_points
