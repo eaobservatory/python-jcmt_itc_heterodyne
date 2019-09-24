@@ -18,8 +18,8 @@
 
 """
 Usage:
-    combine_rxinfo.py [-v|-q] --instrument <inst> --date <date> --dir <dir> --outdir <dir>
-    combine_rxinfo.py [-v|-q] --instrument <inst> --date-start <date> --date-end <date> --dir <dir> --outdir <dir>
+    combine_rxinfo.py [-v|-q] --instrument <inst> --date <date> --dir <dir> --outdir <dir> [--median]
+    combine_rxinfo.py [-v|-q] --instrument <inst> --date-start <date> --date-end <date> --dir <dir> --outdir <dir> [--median]
 
 Options:
     --instrument <inst>     Instrument name
@@ -30,6 +30,7 @@ Options:
     --outdir <dir>          Output directory
     --verbose, -v           Verbose
     --quiet, -q             Quiet
+    --median                Generate median rather than per-receptor data
 """
 
 from __future__ import absolute_import, division, print_function
@@ -42,6 +43,7 @@ import logging
 import re
 import sys
 
+import numpy as np
 from docopt import docopt
 
 from omp.db.part.arc import ArcDB
@@ -63,6 +65,7 @@ def main():
 
     dir_ = args['--dir']
     outdir = args['--outdir']
+    use_median = args['--median']
 
     if not os.path.exists(outdir):
         raise Exception('Specified output directory does not exist')
@@ -71,7 +74,7 @@ def main():
 
     obsinfo = query_db(date_start, date_end, args['--instrument'])
 
-    output = combine_rx_db(rxinfo, obsinfo)
+    output = combine_rx_db(rxinfo, obsinfo, use_median=use_median)
 
     for (key, data) in output.items():
         with open(os.path.join(outdir, 'merged_{}_{}.txt'.format(*key)), 'w') as f:
@@ -79,7 +82,7 @@ def main():
                 print(*line, file=f)
 
 
-def combine_rx_db(rxinfo, obsinfo):
+def combine_rx_db(rxinfo, obsinfo, use_median):
     output = defaultdict(list)
 
     for obs in obsinfo:
@@ -102,14 +105,27 @@ def combine_rx_db(rxinfo, obsinfo):
                 obs['utdate'], obs['obsnum'], obs['subsysnr'])
             continue
 
-        for (recep, t_rx, t_sys) in zip(rxss['recep'], rxss['t_rx'], rxss['t_sys']):
-            if 0.0 < t_rx < 1000.0:
-                out_key = (recep, obs['obs_sb'])
-                out_data = [obs[x] for x in ['utdate', 'obsnum', 'subsysnr', 'lofreq', 'iffreq', 'rffreq']]
-                out_data.extend([t_rx, t_sys])
-                out_data.extend(obs[x] for x in ['wvmtau', 'elevation'])
+        if use_median:
+            recep = 'median'
+            t_rx = np.median(rxss['t_rx']).item()
+            t_sys = np.median(rxss['t_sys']).item()
 
-                output[out_key].append(out_data)
+            out_key = (recep, obs['obs_sb'])
+            out_data = [obs[x] for x in ['utdate', 'obsnum', 'subsysnr', 'lofreq', 'iffreq', 'rffreq']]
+            out_data.extend([t_rx, t_sys])
+            out_data.extend(obs[x] for x in ['wvmtau', 'elevation'])
+
+            output[out_key].append(out_data)
+
+        else:
+            for (recep, t_rx, t_sys) in zip(rxss['recep'], rxss['t_rx'], rxss['t_sys']):
+                if 0.0 < t_rx < 1000.0:
+                    out_key = (recep, obs['obs_sb'])
+                    out_data = [obs[x] for x in ['utdate', 'obsnum', 'subsysnr', 'lofreq', 'iffreq', 'rffreq']]
+                    out_data.extend([t_rx, t_sys])
+                    out_data.extend(obs[x] for x in ['wvmtau', 'elevation'])
+
+                    output[out_key].append(out_data)
 
     return output
 
