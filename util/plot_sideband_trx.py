@@ -52,20 +52,19 @@ def plot_sideband_trx(receiver):
         HeterodyneReceiver.get_interpolated_t_rx(receiver, freq)
         for freq in freqs], color='green')
 
-    t_rx = info.t_rx
     freq_if = info.f_if
 
     if info.t_rx_lo:
         plt.plot(
-            [x[0] - freq_if for x in t_rx],
-            [x[1] for x in t_rx], color='red')
+            [x[0] - freq_if for x in info.t_rx_lsb],
+            [x[1] for x in info.t_rx_lsb], color='red')
 
         plt.plot(
-            [x[0] + freq_if for x in t_rx],
-            [x[1] for x in t_rx], color='blue')
+            [x[0] + freq_if for x in info.t_rx_usb],
+            [x[1] for x in info.t_rx_usb], color='blue')
 
     else:
-        plt.plot(*zip(*t_rx), color='black')
+        plt.plot(*zip(*info.t_rx), color='black')
 
     plt.show()
 

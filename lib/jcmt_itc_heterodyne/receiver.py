@@ -32,7 +32,8 @@ ReceiverInfo = namedtuple(
     'ReceiverInfo',
     ('name', 'f_min', 'f_max', 'f_if', 'f_if_min', 'f_if_max', 'n_mix',
      'ssb_available', 'dsb_available', 'frsw_available',
-     'pixel_size', 'array', 'eta_tel', 't_rx', 't_rx_lo', 'best_sideband'))
+     'pixel_size', 'array', 'eta_tel', 't_rx', 't_rx_lo', 'best_sideband',
+     't_rx_usb', 't_rx_lsb'))
 
 ArrayInfo = namedtuple(
     'ArrayInfo',
@@ -141,6 +142,9 @@ class HeterodyneReceiver(object):
                         'The requested frequency may be too high to '
                         'observe in the lower sideband.')
 
+                if info.t_rx_lsb is not None:
+                    t_rx_data = info.t_rx_lsb
+
             elif sideband == 'USB':
                 freq = sky_freq - if_freq
 
@@ -149,12 +153,19 @@ class HeterodyneReceiver(object):
                         'The requested frequency may be too low to '
                         'observe in the upper sideband.')
 
+                if info.t_rx_usb is not None:
+                    t_rx_data = info.t_rx_usb
+
             else:
                 raise HeterodyneITCError(
                     'The requested sideband was not recognized.')
 
             if extra_output is not None:
                 extra_output['lo_freq'] = freq
+
+        if t_rx_data is None:
+            raise HeterodyneITCError(
+                'No receiver temperature data are available for the requested sideband.')
 
         if receiver == cls.HARP:
             return cls._evaluate_sincos_t_rx(t_rx_data, freq)
