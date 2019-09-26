@@ -71,14 +71,14 @@ def main():
 
 
 def load_combined(dir_):
-    pattern = re.compile('^merged_([^_]+)_([^_]+)\.txt$')
+    pattern = re.compile('^merged_(H\d+|median)_([LU]SB)\.txt$')
 
     ans = {}
 
     for file_ in os.listdir(dir_):
         m = pattern.search(file_)
         if not m:
-            logger.warning('Did not understand file name %', file_)
+            logger.warning('Did not understand file name %s', file_)
             continue
 
         (receptor, sideband) = m.groups()

@@ -22,7 +22,7 @@ from __future__ import absolute_import, division, print_function, \
 from codecs import utf_8_decode
 from collections import namedtuple, OrderedDict
 import json
-from math import cos, radians
+from math import sin, cos, radians
 from pkgutil import get_data
 
 from .error import HeterodyneITCError
@@ -55,7 +55,7 @@ class HeterodyneReceiver(object):
     # are initially None -- to be replaced with data read from the files as
     # needed.
     _tau_data = OrderedDict(((x, None) for x in
-                             (0.03, 0.05, 0.065, 0.1, 0.16, 0.2, 0.25)))
+                             (0.015, 0.03, 0.05, 0.065, 0.1, 0.16, 0.2, 0.25, 0.32)))
 
     @classmethod
     def get_all_receivers(cls):
@@ -96,6 +96,7 @@ class HeterodyneReceiver(object):
         """
 
         info = cls.get_receiver_info(receiver)
+        t_rx_data = info.t_rx
 
         if not info.t_rx_lo:
             # Older t_rx data are tabulated directly in terms of sky frequency.
@@ -155,7 +156,10 @@ class HeterodyneReceiver(object):
             if extra_output is not None:
                 extra_output['lo_freq'] = freq
 
-        return cls._interpolate_trx_data(info, freq)
+        if receiver == cls.HARP:
+            return cls._evaluate_sincos_t_rx(t_rx_data, freq)
+
+        return cls._interpolate_t_rx_data(t_rx_data, freq)
 
     @classmethod
     def _find_best_sideband(cls, info, sky_freq):
@@ -173,11 +177,11 @@ class HeterodyneReceiver(object):
         return 'LSB' if is_lsb else 'USB'
 
     @classmethod
-    def _interpolate_trx_data(cls, info, freq):
+    def _interpolate_t_rx_data(cls, t_rx_data, freq):
         freq_prev = None
         t_rx_prev = None
 
-        for (freq_i, t_rx_i) in info.t_rx:
+        for (freq_i, t_rx_i) in t_rx_data:
             if freq <= freq_i:
                 if freq_prev is None:
                     # This is the first value, so return it immediately.
@@ -197,6 +201,21 @@ class HeterodyneReceiver(object):
             # Frequency is beyond the last value: return the last t_rx
             # value.
             return t_rx_prev
+
+    @classmethod
+    def _evaluate_sincos_t_rx(cls, t_rx_data, freq):
+        # Apply scale and offset.
+        x = t_rx_data[1] * (freq - t_rx_data[0])
+
+        # Start with constant term.
+        t_rx = t_rx_data[2]
+
+        # Read subsequent terms as alternating sin, cos of ascending multiple.
+        for (mult, index) in enumerate(range(3, len(t_rx_data), 2), 1):
+            t_rx += t_rx_data[index] * sin(mult * x)
+            t_rx += t_rx_data[index + 1] * cos(mult * x)
+
+        return t_rx
 
     @classmethod
     def get_interpolated_opacity(cls, tau_225, freq):

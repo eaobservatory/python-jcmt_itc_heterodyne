@@ -55,7 +55,7 @@ def main():
     # Perform a binary search to determine the "WH2O" parameter which gives
     # each desired 225 GHz opacity.
     for tau in taus:
-        mm_min = 0.1
+        mm_min = 0.001
         mm_max = 10.0
 
         while True:
@@ -79,9 +79,9 @@ def main():
 
     # Generate data for each of the desired conditions.
     for (tau, mm) in zip(taus, mms):
-        values = run_am(200.0, 1000.0, 0.01, mm)
+        values = run_am(50.0, 800.0, 0.01, mm)
 
-        values = compress_list(values)
+        values = compress_list(values, tolerance=0.001)
 
         filename = 'tau{}.dat'.format('{:.03f}'.format(tau)[2:])
         print('Writing:', filename)
@@ -106,13 +106,18 @@ def run_am(freq_min, freq_max, freq_res, mm):
          str(mm),
          ],
         shell=False,
-        stdout=subprocess.PIPE)
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE)
 
     (stdoutdata, stderrdata) = p.communicate()
 
     for line in stdoutdata.splitlines():
         (freq, tau, txn) = line.strip().split(' ')
-        result.append((float(freq), float(tau)))
+        freq = float(freq)
+        tau = float(tau)
+        if tau > 100.0:
+            tau = 100.0;
+        result.append((freq, tau))
 
     return result
 

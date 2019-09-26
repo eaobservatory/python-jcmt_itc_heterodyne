@@ -549,51 +549,9 @@ class HeterodyneITC(object):
         if not is_dsb:
             # Single sideband mode.
 
-            if receiver == HeterodyneReceiver.HARP:
-                # HITEC documentation said: 20110310: bypass ATM model for HARP
-                # and use empirical fit to data based on a 345.796 GHz T_sys
-                # for the tau and elevation in question.  Previous calculation
-                # was:
-                # t_sys = (
-                #     (t_rx + eta_tel * t_sky + t_tel + t_im) /
-                #     (eta_sky * eta_tel))
-
-                # For 345.796 GHz reference:
-                ref_freq = 345.796
-                ref_t_rx = 90
-                ref_t_atm = 260
-                ref_t_amb = 265
-                ref_f_850 = 3.3
-                ref_eta_tel = 0.9
-
-                ref_eta_sky = exp(- ref_f_850 * tau_225 /
-                                  cos(radians(zenith_angle_deg)))
-
-                ref_t_sky = ref_t_atm * (1 - ref_eta_sky)
-                ref_t_tel = ref_t_amb * (1 - ref_eta_tel)
-
-                t_sys_345 = (
-                    (ref_t_rx + ref_eta_tel * ref_t_sky + ref_t_tel) /
-                    (ref_eta_sky * ref_eta_tel))
-
-                c2 = 3.75 - 3.66 * exp(-tau_225 /
-                                       cos(radians(zenith_angle_deg)))
-                c1 = -2.0
-                c0 = t_sys_345 + 15
-
-                x = freq - ref_freq
-
-                if freq < 333:
-                    c0 *= 1.1
-                elif freq > 366.25:
-                    c0 *= 1.7
-
-                return c2 * x * x + c1 * x + c0
-
-            else:
-                return (
-                    (t_rx + eta_tel * t_sky + t_tel + t_im) /
-                    (eta_sky * eta_tel))
+            return (
+                (t_rx + eta_tel * t_sky + t_tel + t_im) /
+                (eta_sky * eta_tel))
 
         else:
             # Dual sideband mode.
