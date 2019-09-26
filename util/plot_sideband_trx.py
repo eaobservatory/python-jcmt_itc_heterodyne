@@ -17,22 +17,36 @@
 # this program; if not, write to the Free Software Foundation, Inc.,51 Franklin
 # Street, Fifth Floor, Boston, MA  02110-1301, USA
 
+"""
+Usage:
+    plot_sideband_trx.py [-v|-q] [--out-plot <filename>] <instrument>
+
+Options:
+    --out-plot <filename>   File to which to write graph
+    --verbose, -v           Verbose
+    --quiet, -q             Quiet
+"""
+
+
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
+from docopt import docopt
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import logging
 
 from jcmt_itc_heterodyne import HeterodyneReceiver
 
 
 def main():
-    if (len(sys.argv) != 2):
-        print('Usage: plot_sideband_trx RECEIVER', file=sys.stderr)
-        sys.exit(1)
+    args = docopt(__doc__)
+    logging.basicConfig(level=(
+        logging.DEBUG if args['--verbose'] else (
+            logging.WARNING if args['--quiet'] else logging.INFO)))
 
-    receiver_name = sys.argv[1].upper()
+    receiver_name = args['<instrument>'].upper()
 
     if not hasattr(HeterodyneReceiver, receiver_name):
         print(
@@ -40,10 +54,12 @@ def main():
             file=sys.stderr)
         sys.exit(1)
 
-    plot_sideband_trx(receiver=getattr(HeterodyneReceiver, receiver_name))
+    plot_sideband_trx(
+        receiver=getattr(HeterodyneReceiver, receiver_name),
+        plot_file=args['--out-plot'])
 
 
-def plot_sideband_trx(receiver):
+def plot_sideband_trx(receiver, plot_file=None):
     info = HeterodyneReceiver.get_receiver_info(receiver)
 
     freqs = np.arange(info.f_min, info.f_max, 0.01)
@@ -63,10 +79,13 @@ def plot_sideband_trx(receiver):
             [x[0] + freq_if for x in info.t_rx_usb],
             [x[1] for x in info.t_rx_usb], color='blue')
 
-    else:
+    elif receiver != HeterodyneReceiver.HARP:
         plt.plot(*zip(*info.t_rx), color='black')
 
-    plt.show()
+    if plot_file is not None:
+        plt.savefig(plot_file)
+    else:
+        plt.show()
 
 
 if __name__ == '__main__':
