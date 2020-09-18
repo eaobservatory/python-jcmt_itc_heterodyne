@@ -33,7 +33,7 @@ ReceiverInfo = namedtuple(
     ('name', 'f_min', 'f_max', 'f_if', 'f_if_min', 'f_if_max', 'n_mix',
      'ssb_available', 'dsb_available', 'frsw_available',
      'pixel_size', 'array', 'eta_tel', 't_rx', 't_rx_lo', 'best_sideband',
-     't_rx_usb', 't_rx_lsb'))
+     't_rx_usb', 't_rx_lsb', 't_rx_if'))
 
 ArrayInfo = namedtuple(
     'ArrayInfo',
@@ -97,32 +97,36 @@ class HeterodyneReceiver(object):
         """
 
         info = cls.get_receiver_info(receiver)
+
+        # Determine IF frequency if not specified, in case we have t_rx data
+        # in terms of LO frequency, or an IF-specific t_rx correction.
+        if if_freq is None:
+            if_freq = info.f_if
+            if extra_output is not None:
+                extra_output['if_freq'] = if_freq
+
+        elif not (info.f_if_min <= if_freq <= info.f_if_max):
+            raise HeterodyneITCError(
+                'The requested intermediate frequency is not within '
+                'the available range ({} - {} GHz).'.format(
+                    info.f_if_min, info.f_if_max))
+
+        # Determine which frequency and t_rx data to use.
         t_rx_data = info.t_rx
 
         if not info.t_rx_lo:
             # Older t_rx data are tabulated directly in terms of sky frequency.
             freq = sky_freq
 
-            if (if_freq is not None) or (sideband is not None):
+            if sideband is not None:
                 raise HeterodyneITCError(
-                    'An IF or sideband was specified but the receiver '
-                    'temperature data is not available by LO frequency.')
+                    'A sideband was specified but receiver '
+                    'temperature data are not available by LO frequency.')
 
         else:
             # The receiver has t_rx data tabulated in terms of LO frequency,
-            # so we need to determine the IF frequency and sideband.  If these
-            # are not specified, infer them and add them to "extra_output".
-            if if_freq is None:
-                if_freq = info.f_if
-                if extra_output is not None:
-                    extra_output['if_freq'] = if_freq
-
-            elif not (info.f_if_min <= if_freq <= info.f_if_max):
-                raise HeterodyneITCError(
-                    'The requested intermediate frequency is not within '
-                    'the available range ({} - {} GHz).'.format(
-                        info.f_if_min, info.f_if_max))
-
+            # so we need to determine the sideband.  If this is not specified,
+            # infer it and add to "extra_output".
             if sideband is None:
                 sideband = cls._find_best_sideband(info, sky_freq)
                 if extra_output is not None:
@@ -167,10 +171,19 @@ class HeterodyneReceiver(object):
             raise HeterodyneITCError(
                 'No receiver temperature data are available for the requested sideband.')
 
-        if receiver == cls.HARP:
-            return cls._evaluate_sincos_t_rx(t_rx_data, freq)
+        # Determine which type of t_rx model we have for this instrument.
+        if isinstance(t_rx_data[0], list):
+            t_rx_interpolated = cls._interpolate_t_rx_data(t_rx_data, freq)
 
-        return cls._interpolate_t_rx_data(t_rx_data, freq)
+        else:
+            t_rx_interpolated = cls._evaluate_sincos_t_rx(t_rx_data, freq)
+
+        # Add IF-specific correct if available.
+        if info.t_rx_if is not None:
+            t_rx_interpolated += cls._interpolate_t_rx_data(
+                info.t_rx_if, if_freq)
+
+        return t_rx_interpolated
 
     @classmethod
     def _find_best_sideband(cls, info, sky_freq):

@@ -17,6 +17,7 @@
         ],
         "t_rx_usb": null,
         "t_rx_lsb": null,
+        "t_rx_if": null,
         "best_sideband": null
     },
 
@@ -72,6 +73,17 @@
             [253, 69.5],
             [257, 67.2],
             [261, 72.8]
+        ],
+        "t_rx_if": [
+            [4.0, 41.0],
+            [4.2, 38.0],
+            [4.4, 32.8],
+            [4.8, 20.0],
+            [5.4, 4.2],
+            [5.6, 1.0],
+            [5.8, 0.0],
+            [6.2, 0.0],
+            [7.5, 18.0]
         ],
         "best_sideband": [
             259.0
@@ -164,6 +176,7 @@
             [363, 75.2],
             [365, 75.8]
         ],
+        "t_rx_if": null,
         "best_sideband": [
             310.0,
             325.0,
@@ -256,6 +269,7 @@
         ],
         "t_rx_usb": null,
         "t_rx_lsb": null,
+        "t_rx_if": null,
         "best_sideband": [
             236.0,
             262.0,
@@ -311,6 +325,7 @@
         ],
         "t_rx_usb": null,
         "t_rx_lsb": null,
+        "t_rx_if": null,
         "best_sideband": [
             345.34,
             345.41,
@@ -358,6 +373,7 @@
         ],
         "t_rx_usb": null,
         "t_rx_lsb": null,
+        "t_rx_if": null,
         "best_sideband": [
             660.0
         ]
