@@ -143,8 +143,8 @@ class HeterodyneReceiver(object):
 
                 if sky_freq > (info.f_max - 2.0 * info.f_if):
                     raise HeterodyneITCError(
-                        'The requested frequency may be too high to '
-                        'observe in the lower sideband.')
+                        'The requested frequency ({:.1f} GHz) may be too high '
+                        'to observe in the lower sideband.'.format(sky_freq))
 
                 if info.t_rx_lsb is not None:
                     t_rx_data = info.t_rx_lsb
@@ -154,8 +154,8 @@ class HeterodyneReceiver(object):
 
                 if sky_freq < (info.f_min + 2.0 * info.f_if):
                     raise HeterodyneITCError(
-                        'The requested frequency may be too low to '
-                        'observe in the upper sideband.')
+                        'The requested frequency ({:.1f} GHz) may be too low '
+                        'to observe in the upper sideband.'.format(sky_freq))
 
                 if info.t_rx_usb is not None:
                     t_rx_data = info.t_rx_usb
