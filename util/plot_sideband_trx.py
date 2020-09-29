@@ -79,8 +79,11 @@ def plot_sideband_trx(receiver, plot_file=None):
             [x[0] + freq_if for x in info.t_rx_usb],
             [x[1] for x in info.t_rx_usb], color='blue')
 
-    elif receiver != HeterodyneReceiver.HARP:
+    elif isinstance(info.t_rx[0], list):
         plt.plot(*zip(*info.t_rx), color='black')
+
+    plt.xlabel('Frequency / GHz')
+    plt.ylabel('Receiver temperature / K')
 
     if plot_file is not None:
         plt.savefig(plot_file)
