@@ -18,13 +18,16 @@
 
 """
 Usage:
-    make_comparison.py [-v|-q] --dir <dir> --outdir <dir>
+    make_comparison.py [-v|-q] --dir <dir> --outdir <dir> --receiver <receiver> [--sideband] [--if]
 
 Options:
     --dir <dir>             Input directory
     --outdir <dir>          Output directory
     --verbose, -v           Verbose
     --quiet, -q             Quiet
+    --sideband              Sideband-specific operation
+    --if                    IF-specific operation
+    --receiver <receiver>   Receiver name
 """
 
 from __future__ import absolute_import, division, print_function
@@ -49,6 +52,9 @@ def main():
 
     dir_ = args['--dir']
     outdir = args['--outdir']
+    receiver = args['--receiver']
+    sideband_specific = args['--sideband']
+    if_specific = args['--if']
 
     if not os.path.exists(dir_):
         raise Exception('Specified input directory does not exist')
@@ -58,7 +64,9 @@ def main():
 
     info = load_combined(dir_)
 
-    results = apply_itc(info)
+    results = apply_itc(
+        info, receiver=receiver, sideband_specific=sideband_specific,
+        if_specific=if_specific)
 
     for (key, input_) in info.items():
         output = results[key]
@@ -71,7 +79,7 @@ def main():
 
 
 def load_combined(dir_):
-    pattern = re.compile('^merged_(H\d+|median)_([LU]SB)\.txt$')
+    pattern = re.compile('^merged_(H\d+|median|mean)_([LU]SB)\.txt$')
 
     ans = {}
 
@@ -98,37 +106,43 @@ def load_combined(dir_):
                 columns = line.split(' ')
 
                 entry = dict(zip(
-                    ['utdate', 'obsnum'],
-                    [int(x) for x in columns[0:2]]))
+                    ['utdate', 'obsnum', 'subsysnr'],
+                    [int(x) for x in columns[0:3]]))
                 entry.update(zip(
-                    ['subsysnr', 'lofreq', 'iffreq', 'rffreq', 't_rx', 't_sys', 'wvmtau', 'elevation'],
-                    [float(x) for x in columns[2:]]))
+                    ['lofreq', 'iffreq', 'rffreq', 't_rx', 't_sys', 'wvmtau', 'elevation'],
+                    [float(x) for x in columns[3:10]]))
 
                 data.append(entry)
 
     return ans
 
 
-def apply_itc(info):
+def apply_itc(info, receiver, sideband_specific, if_specific):
     ans = {}
 
     itc = HeterodyneITC()
-    receiver = HeterodyneReceiver.HARP
+    receiver = getattr(HeterodyneReceiver, receiver)
 
     for (key, data) in info.items():
         (receptor, sideband) = key
         ans[key] = result = []
 
         for entry in data:
-            output = {}
+            try:
+                output = {}
 
-            t_sys = itc._calculate_t_sys(
-                receiver, entry['rffreq'], entry['wvmtau'], 90 - entry['elevation'], False,
-                if_freq=None, sideband=None, extra_output=output)
+                t_sys = itc._calculate_t_sys(
+                    receiver, entry['rffreq'], entry['wvmtau'], 90 - entry['elevation'], False,
+                    if_freq=(entry['iffreq'] if if_specific else None),
+                    sideband=(sideband if sideband_specific else None),
+                    extra_output=output)
 
-            output['t_sys'] = t_sys
+                output['t_sys'] = t_sys
 
-            result.append(output)
+                result.append(output)
+
+            except HeterodyneITCError:
+                logger.exception('Error calculating t_sys')
 
     return ans
 
