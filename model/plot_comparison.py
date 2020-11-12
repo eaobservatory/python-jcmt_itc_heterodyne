@@ -19,7 +19,7 @@
 
 """
 Usage:
-    plot_comparison.py [-v|-q] --plot <plotfile> [--ymax <ymax>] [--include-fitted | --ratio]  --receiver <receiver> [--sideband] <file>...
+    plot_comparison.py [-v|-q] --plot <plotfile> [--ymax <ymax>] [--include-fitted | --ratio]  --receiver <receiver> [--sideband] [--freq-bin <size>] [--freq-min <freq>] [--freq-max <freq>] <file>...
 
 Options:
     --plot <plotfile>       Filename for generated plot
@@ -30,6 +30,9 @@ Options:
     --quiet, -q             Quiet
     --sideband              Sideband-specific operation
     --receiver <receiver>   Receiver name
+    --freq-bin <size>       Size of frequency bins (GHz) [default: 1.0]
+    --freq-min <freq>       Minimum frequency (GHz)
+    --freq-max <freq>       Maximum frequency (GHz)
 """
 
 from __future__ import absolute_import, division, print_function
@@ -66,6 +69,9 @@ def main():
     sideband_specific = args['--sideband']
 
     frequency = defaultdict(list)
+    freq_bin_size = float(args['--freq-bin'])
+    freq_min = (None if args['--freq-min'] is None else float(args['--freq-min']))
+    freq_max = (None if args['--freq-max'] is None else float(args['--freq-max']))
 
     pattern = re.compile('_([LU]SB)\.txt$')
 
@@ -86,15 +92,21 @@ def main():
         with open(filename, 'r') as f:
             for line in f:
                 point = DataPoint(sideband, *[float(x) for x in line.strip().split(' ')])
-                freq_bin = int(point.freq + 0.5)
+                freq_bin = int((point.freq / freq_bin_size) + 0.5)
                 frequency[freq_bin].append(point)
 
     itc = HeterodyneITC()
 
     with PdfPages(args['--plot']) as multipage:
-        for freq_bin in sorted(frequency.keys()):
-            logger.debug('Plotting graph for %i GHz', freq_bin)
-            data = frequency[freq_bin]
+        for freq_bin_key in sorted(frequency.keys()):
+            freq_bin = freq_bin_key * freq_bin_size
+            if (freq_min is not None) and (freq_bin < freq_min):
+                continue
+            if (freq_max is not None) and (freq_bin > freq_max):
+                continue
+
+            logger.debug('Plotting graph for {} GHz'.format(freq_bin))
+            data = frequency[freq_bin_key]
             plt.figure()
             plt.title('{} GHz'.format(freq_bin))
             plt.ylim(0.0, ymax)
@@ -106,11 +118,14 @@ def main():
 
                 for (sideband, color) in (zip(('LSB', 'USB'), ('g', 'y')) if sideband_specific else ((None, 'g'),)):
                     try:
-                        for freq in (freq_bin-0.5, freq_bin, freq_bin+0.5):
+                        for (freq, line_label, line_style) in (
+                                (freq_bin - 0.5 * freq_bin_size, 'lower', 'dotted'),
+                                (freq_bin, None, 'solid'),
+                                (freq_bin + 0.5 * freq_bin_size, 'upper', 'dashed')):
                             model_eta_sky = []
                             model_t_sys = []
 
-                            for tau_225 in np.arange(0.00, 0.50, 0.01):
+                            for tau_225 in np.arange(0.00, 0.50, 0.005):
                                 extra = {}
                                 model_t_sys.append(itc._calculate_t_sys(
                                     receiver, freq, tau_225, 60.0,
@@ -118,7 +133,13 @@ def main():
                                     extra_output=extra))
                                 model_eta_sky.append(extra['eta_sky'])
 
-                            plt.plot(model_eta_sky, model_t_sys, color=color, label='model {}'.format('' if sideband is None else sideband))
+                            label = 'model'
+                            if sideband is not None:
+                                label = '{} {}'.format(label, sideband)
+                            if line_label is not None:
+                                label = '{} {}'.format(label, line_label)
+
+                            plt.plot(model_eta_sky, model_t_sys, color=color, linestyle=line_style, label=label)
 
                     except HeterodyneITCError:
                         pass
