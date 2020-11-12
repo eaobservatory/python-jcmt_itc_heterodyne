@@ -141,13 +141,13 @@ def main():
                         marker='.', alpha=0.25, color='k', label='fitted')
 
             else:
-                plt.ylabel('System temperature ratio')
+                plt.ylabel('System temperature ratio (measured / model)')
 
                 plt.plot([1.0, 0.0], [1.0, 1.0], color='k')
 
                 if not sideband_specific:
                     plt.scatter(
-                        [x.eta_sky for x in data], [x.t_sys_model / x.t_sys for x in data],
+                        [x.eta_sky for x in data], [x.t_sys / x.t_sys_model for x in data],
                         marker='.', alpha=0.25, color='r', label='ratio')
 
                 else:
@@ -155,7 +155,7 @@ def main():
                         sb_data = [x for x in data if x.sideband == sideband]
                         if sb_data:
                             plt.scatter(
-                                [x.eta_sky for x in sb_data], [x.t_sys_model / x.t_sys for x in sb_data],
+                                [x.eta_sky for x in sb_data], [x.t_sys / x.t_sys_model for x in sb_data],
                                 marker='.', alpha=0.25, color=color, label='ratio {}'.format(sideband))
 
             plt.legend(loc="upper left")
