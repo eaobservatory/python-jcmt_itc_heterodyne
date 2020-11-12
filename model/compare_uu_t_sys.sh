@@ -4,7 +4,7 @@ set -ex
 
 mkdir -p uu_combined_mean
 python model/combine_rxinfo.py -v --instrument UU \
-    --date-start 20200721 --date-end 20200918 \
+    --date-start 20200721 --date-end 20201111 \
     --dir rxinfo --outdir uu_combined_mean --mean
 
 python model/make_comparison.py -v --receiver UU --sideband --if \
