@@ -70,11 +70,15 @@ def main():
 
     for (key, input_) in info.items():
         output = results[key]
+        assert len(input_) == len(output)
 
         with open(os.path.join(outdir, 'comparison_{}_{}.txt'.format(*key)), 'w') as f:
             for input_entry, output_entry in zip(input_, output):
+                if output_entry is None:
+                    continue
                 entry = [input_entry[x] for x in ['rffreq', 't_rx', 't_sys']]
                 entry.extend(output_entry[x] for x in ['t_rx', 't_sys', 'eta_sky'])
+                entry.append(input_entry['lofreq'])
                 print(*entry, file=f)
 
 
@@ -143,6 +147,8 @@ def apply_itc(info, receiver, sideband_specific, if_specific):
 
             except HeterodyneITCError:
                 logger.exception('Error calculating t_sys')
+
+                result.append(None)
 
     return ans
 
