@@ -52,7 +52,7 @@ from jcmt_itc_heterodyne import \
     HeterodyneITC, HeterodyneITCError, HeterodyneReceiver
 
 DataPoint = namedtuple('DataPoint', (
-    'sideband', 'freq', 't_rx', 't_sys', 't_rx_model', 't_sys_model', 'eta_sky'))
+    'sideband', 'freq', 't_rx', 't_sys', 't_rx_model', 't_sys_model', 'eta_sky', 'freq_lo'))
 
 logger = logging.getLogger(sys.argv[0])
 
