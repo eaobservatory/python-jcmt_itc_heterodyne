@@ -18,8 +18,8 @@
 
 """
 Usage:
-    combine_rxinfo.py [-v|-q] --instrument <inst> --date <date> --dir <dir> --outdir <dir> [--median | --mean | --merged]
-    combine_rxinfo.py [-v|-q] --instrument <inst> --date-start <date> --date-end <date> [--date-exclude <date>...] --dir <dir> --outdir <dir> [--median | --mean | --merged]
+    combine_rxinfo.py [-v|-q] --instrument <inst> --date <date> --dir <dir> --outdir <dir> [--median | --mean | --merged] [--filter]
+    combine_rxinfo.py [-v|-q] --instrument <inst> --date-start <date> --date-end <date> [--date-exclude <date>...] --dir <dir> --outdir <dir> [--median | --mean | --merged] [--filter]
 
 Options:
     --instrument <inst>     Instrument name
@@ -34,6 +34,7 @@ Options:
     --median                Generate median rather than per-receptor data
     --mean                  Generate mean rather than per-receptor data
     --merged                Store per-receptor data in one file
+    --filter                Filter good data only (night, non-EC, status good)
 """
 
 from __future__ import absolute_import, division, print_function
@@ -50,6 +51,7 @@ import numpy as np
 from docopt import docopt
 
 from omp.db.part.arc import ArcDB
+from omp.obs.state import OMPState
 
 logger = logging.getLogger(sys.argv[0])
 
@@ -60,6 +62,8 @@ rx_params = {
     'UU': ReceiverParam(['NU0L', 'NU1L', 'NU0U', 'NU1U'], True),
     'AWEOWEO': ReceiverParam(['NW0L', 'NW1L', 'NW0U', 'NW1U'], True),
 }
+
+ec_project = re.compile('^M\d\d[AB]EC')
 
 
 def main():
@@ -83,6 +87,7 @@ def main():
     use_median = args['--median']
     use_mean = args['--mean']
     store_merged = args['--merged']
+    filter_good = args['--filter']
 
     if not os.path.exists(outdir):
         raise Exception('Specified output directory does not exist')
@@ -96,7 +101,7 @@ def main():
     output = combine_rx_db(
         instrument, rxinfo, obsinfo, date_exclude=date_exclude,
         use_median=use_median, use_mean=use_mean,
-        store_merged=store_merged)
+        store_merged=store_merged, filter_good=filter_good)
 
     for (key, data) in output.items():
         with open(os.path.join(outdir, 'merged_{}_{}.txt'.format(*key)), 'w') as f:
@@ -106,12 +111,26 @@ def main():
 
 def combine_rx_db(
         instrument, rxinfo, obsinfo, date_exclude,
-        use_median, use_mean, store_merged):
+        use_median, use_mean, store_merged, filter_good):
     output = defaultdict(list)
 
     rx_param = rx_params.get(instrument.upper(), ReceiverParam(None, False))
 
     for obs in obsinfo:
+        if filter_good:
+            if ec_project.match(obs['project']):
+                continue
+
+            if not(
+                    obs['commentstatus'] is None
+                    or obs['commentstatus'] == OMPState.GOOD):
+                continue
+
+            if not(
+                    obs['oper_sft'] is None
+                    or obs['oper_sft'] == 'NIGHT'):
+                continue
+
         if date_exclude:
             date = datetime.strptime(str(obs['utdate']), '%Y%m%d')
             excluded = True
@@ -233,8 +252,12 @@ def query_db(date_start, date_end, instrument):
             ', (freq_sig_lower + freq_sig_upper) / 2 AS rffreq'
             ', (wvmtaust + wvmtauen) / 2 AS wvmtau'
             ', (elstart + elend) / 2 AS elevation'
-            ', sw_mode'
+            ', sw_mode, project, oper_sft, obslog.commentstatus'
             ' FROM jcmt.COMMON JOIN jcmt.ACSIS ON COMMON.obsid = ACSIS.obsid'
+            '   LEFT OUTER JOIN omp.ompobslog as obslog'
+            '     ON obslog.obslogid = ('
+            '       SELECT MAX(obslogid) FROM omp.ompobslog obslog2'
+            '       WHERE obslog2.obsid = COMMON.obsid)'
             ' WHERE (utdate BETWEEN %s AND %s)'
             ' AND INSTRUME = %s'
             ' ORDER BY utdate ASC, obsnum ASC, subsysnr ASC',
