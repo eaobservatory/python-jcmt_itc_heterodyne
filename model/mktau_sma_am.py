@@ -91,7 +91,7 @@ def main():
                 print(freq, d, file=f)
 
 
-def run_am(freq_min, freq_max, freq_res, mm):
+def run_am(freq_min, freq_max, freq_res, mm, zenith_angle=0):
     result = []
 
     # am returns bad status if there are narrow lines, so we can't just
@@ -101,7 +101,7 @@ def run_am(freq_min, freq_max, freq_res, mm):
          str(freq_min), 'GHz',
          str(freq_max), 'GHz',
          str(freq_res), 'GHz',
-         '0', 'deg',
+         str(zenith_angle), 'deg',
          '277', 'K',  # Temperature parameter.
          str(mm),
          ],
