@@ -19,13 +19,14 @@
 """
 Usage:
     combine_rxinfo.py [-v|-q] --instrument <inst> --date <date> --dir <dir> --outdir <dir> [--median | --mean | --merged]
-    combine_rxinfo.py [-v|-q] --instrument <inst> --date-start <date> --date-end <date> --dir <dir> --outdir <dir> [--median | --mean | --merged]
+    combine_rxinfo.py [-v|-q] --instrument <inst> --date-start <date> --date-end <date> [--date-exclude <date>...] --dir <dir> --outdir <dir> [--median | --mean | --merged]
 
 Options:
     --instrument <inst>     Instrument name
     --date <date>           Single date
     --date-start <date>     Start date
     --date-end <date>       End date
+    --date-exclude <date>...  Dates to exclude
     --dir <dir>             Input directory
     --outdir <dir>          Output directory
     --verbose, -v           Verbose
@@ -73,6 +74,10 @@ def main():
         date_start = datetime.strptime(args['--date-start'], '%Y%m%d')
         date_end = datetime.strptime(args['--date-end'], '%Y%m%d')
 
+        date_exclude = [
+            [datetime.strptime(x, '%Y%m%d') for x in y.split('-')]
+            for y in args['--date-exclude']]
+
     dir_ = args['--dir']
     outdir = args['--outdir']
     use_median = args['--median']
@@ -89,7 +94,8 @@ def main():
     obsinfo = query_db(date_start, date_end, instrument)
 
     output = combine_rx_db(
-        instrument, rxinfo, obsinfo, use_median=use_median, use_mean=use_mean,
+        instrument, rxinfo, obsinfo, date_exclude=date_exclude,
+        use_median=use_median, use_mean=use_mean,
         store_merged=store_merged)
 
     for (key, data) in output.items():
@@ -99,12 +105,25 @@ def main():
 
 
 def combine_rx_db(
-        instrument, rxinfo, obsinfo, use_median, use_mean, store_merged):
+        instrument, rxinfo, obsinfo, date_exclude,
+        use_median, use_mean, store_merged):
     output = defaultdict(list)
 
     rx_param = rx_params.get(instrument.upper(), ReceiverParam(None, False))
 
     for obs in obsinfo:
+        if date_exclude:
+            date = datetime.strptime(str(obs['utdate']), '%Y%m%d')
+            excluded = True
+            for exclusion in date_exclude:
+                if (date >= exclusion[0]) and (date <= exclusion[1]):
+                    break
+            else:
+                excluded = False
+
+            if excluded:
+                continue
+
         rxdate = rxinfo.get(str(obs['utdate']))
         if rxdate is None:
             logger.warning('Nothing found for date %i', obs['utdate'])
