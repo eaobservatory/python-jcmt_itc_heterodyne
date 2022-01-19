@@ -19,13 +19,14 @@
 
 """
 Usage:
-    plot_comparison.py [-v|-q] --plot <plotfile> [--ymax <ymax>] [--include-fitted | --ratio]  --receiver <receiver> [--sideband] [--freq-bin <size>] [--freq-min <freq>] [--freq-max <freq>] <file>...
+    plot_comparison.py [-v|-q] --plot <plotfile> [--ymax <ymax>] [--include-fitted | --ratio | --histogram]  --receiver <receiver> [--sideband] [--freq-bin <size>] [--freq-min <freq>] [--freq-max <freq>] <file>...
 
 Options:
     --plot <plotfile>       Filename for generated plot
     --ymax <ymax>           Maximum value on Y-axis [default: 3000.0]
     --include-fitted        Included fitted data points
     --ratio                 Plot as ratio rather than data + model line
+    --histogram             Plot ratio as a histogram
     --verbose, -v           Verbose
     --quiet, -q             Quiet
     --sideband              Sideband-specific operation
@@ -109,11 +110,15 @@ def main():
             data = frequency[freq_bin_key]
             plt.figure()
             plt.title('{} GHz'.format(freq_bin))
-            plt.ylim(0.0, ymax)
-            plt.xlim(1.0, 0.0)
-            plt.xlabel('Sky efficiency')
 
-            if not args['--ratio']:
+            if not args['--histogram']:
+                plt.ylim(0.0, ymax)
+                plt.xlim(1.0, 0.0)
+                plt.xlabel('Sky efficiency')
+            else:
+                plt.xlim(0.0, ymax)
+
+            if not args['--ratio'] and not args['--histogram']:
                 plt.ylabel('System temperature / K')
 
                 for (sideband, color) in (zip(('LSB', 'USB'), ('g', 'y')) if sideband_specific else ((None, 'g'),)):
@@ -162,22 +167,36 @@ def main():
                         marker='.', alpha=0.25, color='k', label='fitted')
 
             else:
-                plt.ylabel('System temperature ratio (measured / model)')
+                if not args['--histogram']:
+                    plt.ylabel('System temperature ratio (measured / model)')
 
-                plt.plot([1.0, 0.0], [1.0, 1.0], color='k')
+                    plt.plot([1.0, 0.0], [1.0, 1.0], color='k')
+
+                else:
+                    plt.xlabel('System temperature ratio (measured / model)')
 
                 if not sideband_specific:
-                    plt.scatter(
-                        [x.eta_sky for x in data], [x.t_sys / x.t_sys_model for x in data],
-                        marker='.', alpha=0.25, color='r', label='ratio')
+                    t_sys_ratio = [x.t_sys / x.t_sys_model for x in data]
+
+                    if not args['--histogram']:
+                        plt.scatter(
+                            [x.eta_sky for x in data], t_sys_ratio,
+                            marker='.', alpha=0.25, color='r', label='ratio')
+                    else:
+                        plt.hist(t_sys_ratio, color='r', label='ratio')
 
                 else:
                     for (sideband, color) in zip(('LSB', 'USB'), ('r', 'b')):
                         sb_data = [x for x in data if x.sideband == sideband]
                         if sb_data:
-                            plt.scatter(
-                                [x.eta_sky for x in sb_data], [x.t_sys / x.t_sys_model for x in sb_data],
-                                marker='.', alpha=0.25, color=color, label='ratio {}'.format(sideband))
+                            t_sys_ratio = [x.t_sys / x.t_sys_model for x in sb_data]
+
+                            if not args['--histogram']:
+                                plt.scatter(
+                                    [x.eta_sky for x in sb_data], t_sys_ratio,
+                                    marker='.', alpha=0.25, color=color, label='ratio {}'.format(sideband))
+                            else:
+                                plt.hist(t_sys_ratio, alpha=0.5, color=color, label='ratio {}'.format(sideband))
 
             plt.legend(loc="upper left")
 
