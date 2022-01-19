@@ -59,6 +59,8 @@ def main():
 
     # Generate data for each of the desired conditions.
     for (tau, mm) in zip(taus, mms):
+        print('Running model for:', tau)
+
         values = run_am(50.0, 800.0, 0.01, mm)
 
         values = compress_list(values, tolerance=0.001)
@@ -72,11 +74,14 @@ def main():
 
 
 def find_mm(tau):
+    print('Binary search to find starting conditions for:', tau)
+
     mm_min = 0.001
     mm_max = 10.0
 
     while True:
         mm_mid = (mm_min + mm_max) / 2.0
+        print('    Midpoint: ', mm_mid)
 
         values = run_am(225.0, 225.0, 0.01, mm_mid)
 
