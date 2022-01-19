@@ -264,5 +264,6 @@ def mean_valid(values):
 
     return np.mean(valid).item()
 
+
 if __name__ == '__main__':
     main()
