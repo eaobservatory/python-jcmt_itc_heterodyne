@@ -55,7 +55,9 @@ logger = logging.getLogger(sys.argv[0])
 ReceiverParam = namedtuple('ReceiverParam', ('receptors', 'filter_t_sys'))
 
 rx_params = {
+    'ALAIHI': ReceiverParam(['NA0', 'NA1'], True),
     'UU': ReceiverParam(['NU0L', 'NU1L', 'NU0U', 'NU1U'], True),
+    'AWEOWEO': ReceiverParam(['NW0L', 'NW1L', 'NW0U', 'NW1U'], True),
 }
 
 
@@ -100,7 +102,7 @@ def combine_rx_db(
         instrument, rxinfo, obsinfo, use_median, use_mean, store_merged):
     output = defaultdict(list)
 
-    rx_param = rx_params.get(instrument, ReceiverParam(None, False))
+    rx_param = rx_params.get(instrument.upper(), ReceiverParam(None, False))
 
     for obs in obsinfo:
         rxdate = rxinfo.get(str(obs['utdate']))
