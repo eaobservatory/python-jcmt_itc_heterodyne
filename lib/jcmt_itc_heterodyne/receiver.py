@@ -318,7 +318,7 @@ class HeterodyneReceiver(object):
         return cls._tau_data[tau_225]
 
     @classmethod
-    def _read_receiver_info(cls):
+    def _read_receiver_info(cls, filename=None):
         """
         Read receiver information from the "receiver_info.json" file
         and store it in the class's "_info" attribute.
@@ -337,8 +337,15 @@ class HeterodyneReceiver(object):
             (cls.WD, 'RxWD'),
         ]
 
-        receiver_data = json.loads(utf_8_decode(
-            get_data('jcmt_itc_heterodyne', 'data/receiver_info.json'))[0])
+        if filename is None:
+            receiver_data_json = get_data(
+                'jcmt_itc_heterodyne', 'data/receiver_info.json')
+
+        else:
+            with open(filename, 'rb') as f:
+                receiver_data_json = f.read()
+
+        receiver_data = json.loads(utf_8_decode(receiver_data_json)[0])
 
         for (receiver, name) in receiver_names:
             receiver_info = receiver_data.get(name)
