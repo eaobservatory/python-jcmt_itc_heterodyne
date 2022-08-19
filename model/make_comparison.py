@@ -18,7 +18,7 @@
 
 """
 Usage:
-    make_comparison.py [-v|-q] --dir <dir> --outdir <dir> --receiver <receiver> [--sideband] [--if]
+    make_comparison.py [-v|-q] --dir <dir> --outdir <dir> --receiver <receiver> [--sideband] [--if] [--modeldate <date>]
 
 Options:
     --dir <dir>             Input directory
@@ -28,6 +28,7 @@ Options:
     --sideband              Sideband-specific operation
     --if                    IF-specific operation
     --receiver <receiver>   Receiver name
+    --modeldate <date>      Specific date model
 """
 
 from __future__ import absolute_import, division, print_function
@@ -61,6 +62,12 @@ def main():
 
     if not os.path.exists(outdir):
         raise Exception('Specified output directory does not exist')
+
+    # To read a specific info file:
+    model_date = args['--modeldate']
+    if model_date is not None:
+        HeterodyneReceiver._read_receiver_info(
+            'lib/jcmt_itc_heterodyne/data/receiver_info_{}.json'.format(model_date))
 
     info = load_combined(dir_)
 
