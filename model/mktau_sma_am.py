@@ -35,10 +35,19 @@
 #   * You will need a configuration file suitable for Manuakea, such as the
 #     example "2.5" provided for "am" (see the AM_CONFIG variable below).
 
+"""
+Usage:
+    mktau_sma_am.py [--ot]
+
+Options:
+    --ot            Observing tool style output
+"""
+
 from __future__ import print_function
 
 import subprocess
 
+from docopt import docopt
 from eao_util.interpolation import compress_list
 from jcmt_itc_heterodyne import HeterodyneReceiver
 
@@ -48,9 +57,21 @@ AM_CONFIG = 'MaunaKea_ex25.amc'
 
 
 def main():
-    # Determine at which frequencies the ITC needs "tau" files.
-    taus = list(HeterodyneReceiver._tau_data.keys())
+    args = docopt(__doc__)
+
+    mode_ot = args['--ot']
+
     mms = []
+    kwargs = {}
+    if not mode_ot:
+        # Determine at which 225 GHz opacities the ITC needs "tau" files.
+        taus = list(HeterodyneReceiver._tau_data.keys())
+        tolerance = 0.001
+    else:
+        # Consider the 225 GHz opacities used by the OT.
+        taus = [0.03, 0.05, 0.065, 0.1, 0.16, 0.2, 0.25]
+        tolerance = 0.01
+        kwargs['max_value'] = 10.0
 
     # Perform a binary search to determine the "WH2O" parameter which gives
     # each desired 225 GHz opacity.
@@ -61,11 +82,15 @@ def main():
     for (tau, mm) in zip(taus, mms):
         print('Running model for:', tau)
 
-        values = run_am(50.0, 800.0, 0.01, mm)
+        values = run_am(50.0, 800.0, 0.01, mm, **kwargs)
 
-        values = compress_list(values, tolerance=0.001)
+        values = compress_list(values, tolerance=tolerance)
 
-        filename = 'tau{}.dat'.format('{:.03f}'.format(tau)[2:])
+        filename_num = '{:.03f}'.format(tau)[2:]
+        if mode_ot:
+            while filename_num.endswith('0'):
+                filename_num = filename_num[:-1]
+        filename = 'tau{}.dat'.format(filename_num)
         print('Writing:', filename)
 
         with open(filename, 'w') as f:
@@ -100,7 +125,7 @@ def find_mm(tau):
     return mm_mid
 
 
-def run_am(freq_min, freq_max, freq_res, mm, zenith_angle=0):
+def run_am(freq_min, freq_max, freq_res, mm, zenith_angle=0, max_value=100.0):
     result = []
 
     # am returns bad status if there are narrow lines, so we can't just
@@ -124,8 +149,8 @@ def run_am(freq_min, freq_max, freq_res, mm, zenith_angle=0):
         (freq, tau, txn) = line.strip().split(' ')
         freq = float(freq)
         tau = float(tau)
-        if tau > 100.0:
-            tau = 100.0;
+        if tau > max_value:
+            tau = max_value
         result.append((freq, tau))
 
     return result
