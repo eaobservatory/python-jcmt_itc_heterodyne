@@ -1,5 +1,5 @@
 # Copyright (C) 2007-2009 Science and Technology Facilities Council.
-# Copyright (C) 2015-2018 East Asian Observatory
+# Copyright (C) 2015-2023 East Asian Observatory
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,6 +30,10 @@ from .version import version
 default_time_between_refs = 30.0
 speed_of_light = 299792458
 
+# J_m: mean radiation temperature of sky.
+j_m = 260
+# J_tel: mean radiation temperature of telescope enclosure.
+j_tel = 265
 
 DurationParam = namedtuple(
     'DurationParam',
@@ -513,6 +517,33 @@ class HeterodyneITC(object):
                 'increase the integration time per point.'.format(
                     origin, int_time, self.int_time_minimum))
 
+    def _get_efficiencies_temperatures(
+            self, receiver, freq, tau_225, zenith_angle_deg,
+            extra_output=None):
+        """
+        Get efficiency and temperature values for a system temperature
+        calculation.
+        """
+
+        t_im = 0.0
+
+        tau = HeterodyneReceiver.get_interpolated_opacity(
+            tau_225=tau_225, freq=freq)
+
+        eta_sky = exp(- tau / cos(radians(zenith_angle_deg)))
+
+        t_sky = j_m * (1 - eta_sky)
+
+        eta_tel = HeterodyneReceiver.get_receiver_info(receiver).eta_tel
+
+        t_tel = j_tel * (1 - eta_tel)
+
+        if extra_output is not None:
+            extra_output['tau'] = tau
+            extra_output['eta_sky'] = eta_sky
+
+        return (eta_sky, eta_tel, t_sky, t_tel, t_im)
+
     def _calculate_t_sys(
             self, receiver, freq, tau_225, zenith_angle_deg,
             is_dsb, if_freq, sideband, extra_output=None):
@@ -523,28 +554,17 @@ class HeterodyneITC(object):
         data are written, e.g. T_rx.
         """
 
-        t_im = 0.0
+        (eta_sky, eta_tel, t_sky, t_tel, t_im) = self._get_efficiencies_temperatures(
+            receiver, freq, tau_225, zenith_angle_deg,
+            extra_output=extra_output)
 
         t_rx = HeterodyneReceiver.get_interpolated_t_rx(
             receiver=receiver, sky_freq=freq,
             if_freq=if_freq, sideband=sideband,
             extra_output=extra_output)
 
-        tau = HeterodyneReceiver.get_interpolated_opacity(
-            tau_225=tau_225, freq=freq)
-
-        eta_sky = exp(- tau / cos(radians(zenith_angle_deg)))
-
         if extra_output is not None:
             extra_output['t_rx'] = t_rx
-            extra_output['tau'] = tau
-            extra_output['eta_sky'] = eta_sky
-
-        t_sky = 260.0 * (1 - eta_sky)
-
-        eta_tel = HeterodyneReceiver.get_receiver_info(receiver).eta_tel
-
-        t_tel = 265.0 * (1 - eta_tel)
 
         if not is_dsb:
             # Single sideband mode.
@@ -556,19 +576,36 @@ class HeterodyneITC(object):
         else:
             # Dual sideband mode.
 
-            if receiver == HeterodyneReceiver.WD:
-                # HITEC documentation said: RxWD has SSB T_Rx=600K.
-                # Do nothing now, but may have to use the right DSB T_Rx
-                # which could be half of the SSB T_Rx.  (t_rx = t_rx / 2.0)
+            return (
+                2.0 * (t_rx + eta_tel * t_sky + t_tel) /
+                (eta_sky * eta_tel))
 
-                return (
-                    2.0 * (t_rx + eta_tel * t_sky + t_tel) /
-                    (eta_sky * eta_tel))
+    def _estimate_t_rx_from_t_sys(
+            self, receiver, freq, tau_225, zenith_angle_deg,
+            is_dsb, if_freq, sideband, t_sys, extra_output=None):
+        """
+        Estimate receiver temperature from a measurement of system temperature.
 
-            else:
-                return (
-                    2.0 * (t_rx + eta_tel * t_sky + t_tel) /
-                    (eta_sky * eta_tel))
+        This applies the inverse relation of the `_calculate_t_sys` method.
+        """
+
+        (eta_sky, eta_tel, t_sky, t_tel, t_im) = self._get_efficiencies_temperatures(
+            receiver, freq, tau_225, zenith_angle_deg,
+            extra_output=extra_output)
+
+        numerator = t_sys * eta_sky * eta_tel
+
+        if not is_dsb:
+            # Single sideband mode.
+
+            numerator -= t_im
+
+        else:
+            # Dual sideband mode.
+
+            numerator /= 2.0
+
+        return numerator - (eta_tel * t_sky + t_tel)
 
     def _rms_in_integration_time(
             self, time,
