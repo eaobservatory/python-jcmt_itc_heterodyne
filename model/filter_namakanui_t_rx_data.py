@@ -18,21 +18,24 @@
 # Street, Fifth Floor, Boston, MA  02110-1301, USA
 
 """
-filter - Filter receiver temperature data
+filter_namakanui_t_rx_data - Filter receiver temperature data
 
 Usage:
-    filter [options] <filename>
+    filter_namakanui_t_rx_data [options] <filename>
 
 Options:
     --smooth                    Apply smoothing
     --method <method>           Smoothing method [default: mean]
     --width <width>             Smoothing width [default: 3]
     --despiketolerance <value>  Despking fractional tolerance [default: 0.1]
+    --despikeref <function>     Despking reference function [default: min]
     --compress                  Apply compression
     --tolerance <tolerance>     Compression tolerance [default: 0.5]
     --lo2 <numbers>             LO2s to include (1-indexed, comma-separated)
     --if <frequency>            Select values matching IF frequency
     --ifrelation                Output Trx vs IF instead of vs LO
+    --prefix <prefix>           Output filename prefix
+    --json                      Also write JSON (for receiver info file)
     --verbose, -v               Verbose
     --quiet, -q                 Quiet
 """
@@ -43,7 +46,7 @@ from __future__ import print_function
 from collections import namedtuple
 import logging
 import re
-from statistics import mean
+from statistics import mean, median
 import sys
 
 from docopt import docopt
@@ -70,10 +73,22 @@ def main():
     if args['--if']:
         if_ = float(args['--if'])
 
+    prefix = ''
+    if args['--prefix']:
+        prefix = '{}_'.format(args['--prefix'])
+
     pattern = re.compile('^trx_[01]([UL])_dcm([0-9]+)$')
 
-    logger.info('Reading file %s', args['<filename>'])
-    with open(args['<filename>']) as f:
+    filename = args['<filename>']
+    if filename.endswith('.txt'):
+        format_csv = False
+    elif filename.endswith('.csv'):
+        format_csv = True
+    else:
+        raise Exception('Filename {!r} is not .txt or .csv'.format(filename))
+
+    logger.info('Reading file %s', filename)
+    with open(filename) as f:
         cols = None
         header = None
         data = []
@@ -84,22 +99,36 @@ def main():
             if not line:
                 continue
 
-            if line.startswith('#'):
-                header = line[1:]
-                continue
+            if format_csv:
+                if cols is None:
+                    cols = line.split(',')[1:]
+                    continue
 
-            if cols is None:
-                cols = header.split(' ')
+                vals = line.split(',')[1:]
 
-            vals = line.split(' ')
+            else:
+                if line.startswith('#'):
+                    header = line[1:]
+                    continue
+
+                if cols is None:
+                    cols = header.split(' ')
+
+                vals = line.split(' ')
+
             assert(len(vals) == len(cols))
 
             row = dict(zip(cols, vals))
 
             lo_freq = float(row['lo_ghz'])
-            if_freq = float(row['if_ghz'])
+            if_freq = None
+            if 'if_ghz' in row:
+                if_freq = float(row['if_ghz'])
 
             if if_:
+                if if_freq is None:
+                    raise Exception('if_ghz column not present')
+
                 if not abs(if_freq - if_) < 0.05:
                     continue
 
@@ -173,20 +202,35 @@ def main():
             widths = [int(x) for x in args['--width'].split(',')]
             despiketolerance = [
                 float(x) for x in args['--despiketolerance'].split(',')]
+            despikeref = args['--despikeref'].split(',')
 
             for (method, width) in zip(methods, widths):
                 if method == 'mean':
                     logger.info('Applying sliding mean smooth')
                     data_sb = smooth_mean(data_sb, n=width)
 
+                elif method == 'median':
+                    logger.info('Applying sliding median smooth')
+                    data_sb = smooth_median(data_sb, n=width)
+
                 elif method == 'minimum':
                     logger.info('Applying sliding minimum smooth')
                     data_sb = smooth_min(data_sb, n=width)
 
+                elif method == 'maximum':
+                    logger.info('Applying sliding maximum smooth')
+                    data_sb = smooth_max(data_sb, n=width)
+
+                elif method == 'midrange':
+                    logger.info('Applying midrange smooth')
+                    data_sb = smooth_midrange(data_sb, n=width)
+
                 elif method == 'despike':
                     logger.info('Applying despiking filter')
                     data_sb = smooth_despike(
-                        data_sb, n=width, tolerance=despiketolerance.pop(0))
+                        data_sb, n=width,
+                        tolerance=despiketolerance.pop(0),
+                        ref_func=despikeref.pop(0))
 
                 else:
                     raise Exception(
@@ -203,14 +247,33 @@ def main():
             min_ = min(x[1] for x in data_sb)
             data_sb = [(x[0], x[1] - min_) for x in data_sb]
 
-        outfile = 'trx_{}{}.txt'.format(sideband, suffix)
+        outfile = '{}trx_{}{}.txt'.format(prefix, sideband, suffix)
         logger.info('Writing %s', outfile)
         with open(outfile, 'w') as f:
             for (freq, value) in data_sb:
                 print(freq, '{:.1f}'.format(value), file=f)
 
+        if args['--json']:
+            with open(outfile.replace('.txt', '.json'), 'w') as f:
+                for (n, (freq, value)) in enumerate(data_sb, start=1):
+                    print('            [{}, {:.1f}]{}'.format(
+                        freq, value,
+                        ('' if n >= len(data_sb) else ',')), file=f)
+
 
 def smooth_min(data, n):
+    return smooth_func(data, n, min)
+
+
+def smooth_max(data, n):
+    return smooth_func(data, n, max)
+
+
+def smooth_midrange(data, n):
+    return smooth_func(data, n, lambda xs: ((min(xs) + max(xs)) / 2.0))
+
+
+def smooth_func(data, n, func):
     smoothed = []
 
     length = len(data)
@@ -220,12 +283,22 @@ def smooth_min(data, n):
             if 0 <= j < length:
                 vals.append(data[j][1])
 
-        smoothed.append([data[i][0], min(vals)])
+        smoothed.append([data[i][0], func(vals)])
 
     return smoothed
 
 
-def smooth_despike(data, n, tolerance):
+def smooth_despike(data, n, tolerance, ref_func):
+    if ref_func == 'min':
+        func = min
+        comparison = abs
+    elif ref_func == 'median':
+        func = median
+        comparison = lambda x: x
+    else:
+        raise Exception(
+            'Unknown reference function "{}"'.format(ref_func))
+
     smoothed = []
 
     length = len(data)
@@ -235,26 +308,19 @@ def smooth_despike(data, n, tolerance):
             if 0 <= j < length:
                 vals.append(data[j][1])
 
-        min_ = min(vals)
-        if abs(data[i][1] - min_) < tolerance * min_:
+        ref = func(vals)
+        if comparison(data[i][1] - ref) < tolerance * ref:
             smoothed.append([data[i][0], data[i][1]])
 
     return smoothed
 
 
 def smooth_mean(data, n):
-    smoothed = []
+    return smooth_func(data, n, mean)
 
-    length = len(data)
-    for i in range(0, length):
-        vals = []
-        for j in range(i - n, i + n + 1):
-            if 0 <= j < length:
-                vals.append(data[j][1])
 
-        smoothed.append([data[i][0], mean(vals)])
-
-    return smoothed
+def smooth_median(data, n):
+    return smooth_func(data, n, median)
 
 
 def subtract_min(data):
