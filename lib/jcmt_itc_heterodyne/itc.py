@@ -649,7 +649,8 @@ class HeterodyneITC(object):
         # overlap into account when rasterizing.
         array_info = HeterodyneReceiver.get_receiver_info(receiver).array
         if (map_mode == self.RASTER) and (array_info is not None):
-            multiscan = 1.0 / sqrt(array_info.footprint / dy)
+            multiscan = sqrt(
+                dy / (array_info.footprint * array_info.fraction_available))
 
         rms = (
             multiscan * het_fudge * het_dfact *

@@ -244,7 +244,8 @@
             "jiggle_patterns": [
                 ["HARP 4", 16],
                 ["HARP 5", 25]
-            ]
+            ],
+            "fraction_available": 0.75
         },
         "t_rx_lo": false,
         "t_rx": [

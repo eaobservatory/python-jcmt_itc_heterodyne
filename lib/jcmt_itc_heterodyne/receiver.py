@@ -1,5 +1,5 @@
 # Copyright (C) 2007-2009 Science and Technology Facilities Council.
-# Copyright (C) 2015-2019 East Asian Observatory
+# Copyright (C) 2015-2023 East Asian Observatory
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,7 +37,8 @@ ReceiverInfo = namedtuple(
 
 ArrayInfo = namedtuple(
     'ArrayInfo',
-    ('size', 'f_angle', 'footprint', 'scan_spacings', 'jiggle_patterns'))
+    ('size', 'f_angle', 'footprint', 'scan_spacings', 'jiggle_patterns',
+     'fraction_available'))
 
 
 class HeterodyneReceiver(object):

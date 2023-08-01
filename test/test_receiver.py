@@ -1,4 +1,4 @@
-# Copyright (C) 2015-2019 East Asian Observatory
+# Copyright (C) 2015-2023 East Asian Observatory
 # All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or modify it under
@@ -47,6 +47,7 @@ class ReceiverTest(TestCase):
         self.assertIsInstance(info.array, ArrayInfo)
         self.assertIsInstance(info.array.jiggle_patterns, OrderedDict)
         self.assertIsInstance(info.array.scan_spacings, OrderedDict)
+        self.assertIsInstance(info.array.fraction_available, float)
 
         info = HeterodyneReceiver.get_receiver_info(HeterodyneReceiver.A3)
         self.assertIsInstance(info, ReceiverInfo)
