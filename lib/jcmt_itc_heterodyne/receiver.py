@@ -48,6 +48,7 @@ class HeterodyneReceiver(object):
     ALAIHI = 4
     UU = 5
     AWEOWEO = 6
+    KUNTUR = 7
 
     # Data structure holding information for each receiver.  To be filled
     # the first time the data are needed.
@@ -331,9 +332,10 @@ class HeterodyneReceiver(object):
         # used by this class.  (And the ordering in which to display them.)
         receiver_names = [
             (cls.HARP, 'HARP'),
-            # (cls.ALAIHI, '\u02bbAla\u02bbihi'),
+            (cls.ALAIHI, '\u02bbAla\u02bbihi'),
             (cls.UU, '\u02bb\u016a\u02bb\u016b'),
             (cls.AWEOWEO, '\u02bb\u0100weoweo'),
+            (cls.KUNTUR, 'Kuntur'),
             (cls.A3, 'RxA3'),
             (cls.WD, 'RxWD'),
         ]

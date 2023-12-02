@@ -1,10 +1,10 @@
 {
     "ʻAlaʻihi": {
-        "f_min": 85.0,
-        "f_max": 87.0,
-        "f_if": null,
-        "f_if_min": null,
-        "f_if_max": null,
+        "f_min": 84.0,
+        "f_max": 96.2,
+        "f_if": 6.0,
+        "f_if_min": 4.0,
+        "f_if_max": 7.3,
         "n_mix": 2,
         "eta_tel": 0.9,
         "ssb_available": true,
@@ -14,6 +14,8 @@
         "array": null,
         "t_rx_lo": false,
         "t_rx": [
+            [84.0, 157.0],
+            [95.0, 135.0]
         ],
         "t_rx_usb": null,
         "t_rx_lsb": null,
@@ -123,6 +125,30 @@
             340.0,
             350.0
         ]
+    },
+
+    "Kuntur": {
+        "f_min": 609.0,
+        "f_max": 715.0,
+        "f_if": 5.5,
+        "f_if_min": 4.0,
+        "f_if_max": 7.3,
+        "n_mix": 2,
+        "eta_tel": 0.65,
+        "ssb_available": true,
+        "dsb_available": false,
+        "frsw_available": false,
+        "pixel_size": 3.8,
+        "array": null,
+        "t_rx_lo": false,
+        "t_rx": [
+            [605.0, 156.0],
+            [720.0, 270.0]
+        ],
+        "t_rx_usb": null,
+        "t_rx_lsb": null,
+        "t_rx_if": null,
+        "best_sideband": null
     },
 
     "RxA3": {
