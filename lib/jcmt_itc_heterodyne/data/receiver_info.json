@@ -161,7 +161,11 @@
             [710.0, 232.2]
         ],
         "t_rx_if": null,
-        "best_sideband": null
+        "best_sideband": [
+           650.0,
+           670.0,
+           685.0
+        ]
     },
 
     "RxA3": {
