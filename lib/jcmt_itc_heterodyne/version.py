@@ -1,4 +1,4 @@
-# Copyright (C) 2015-2023 East Asian Observatory
+# Copyright (C) 2015-2024 East Asian Observatory
 # All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or modify it under
@@ -18,4 +18,4 @@
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
-version = '1.0.15'
+version = '1.0.16'
