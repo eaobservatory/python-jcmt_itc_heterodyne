@@ -5,7 +5,7 @@ Introduction
 ------------
 
 This package contains the Python-based integration time calculator
-for JCMT heterodyne instruments  It is based on the original Perl
+for JCMT heterodyne instruments.  It is based on the original Perl
 HITEC software.
 
 Usage
