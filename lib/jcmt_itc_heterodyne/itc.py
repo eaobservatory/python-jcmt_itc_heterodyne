@@ -74,6 +74,8 @@ class HeterodyneITC(object):
     RV_DEF_OPT = 1
     RV_DEF_RAD = 2
 
+    # Basic minimum time, not taking into account basket weaving.
+    # See also get_minimum_int_time().
     int_time_minimum = 0.1
 
     def __init__(self, time_between_refs=None):
@@ -109,6 +111,16 @@ class HeterodyneITC(object):
         """
 
         return self.jiggle_patterns.copy()
+
+    def get_minimum_int_time(self, basket_weave):
+        """
+        Get minimum integration time, taking into account basket weaving.
+        """
+
+        if basket_weave:
+            return 2.0 * self.int_time_minimum
+
+        return self.int_time_minimum
 
     def velocity_to_freq_res(self, freq, velocity):
         """
@@ -318,6 +330,7 @@ class HeterodyneITC(object):
                 passes = 2 if basket_weave else 1
 
             else:
+                basket_weave = False
                 passes = 1
                 n_rows = 1
 
@@ -374,7 +387,8 @@ class HeterodyneITC(object):
                         t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
 
                     self._check_int_time(
-                        int_time, 'requested target sensitivity')
+                        int_time, 'requested target sensitivity',
+                        basket_weave=basket_weave)
 
                     elapsed_time = self._elapsed_time_for_integration_time(
                         time=int_time, n_rows=n_rows,
@@ -386,14 +400,17 @@ class HeterodyneITC(object):
                     elapsed_times.append(elapsed_time)
 
                 elif calc_mode == self.INT_TIME_TO_RMS:
-                    if input_ < self.int_time_minimum:
+                    minimum_int_time = self.get_minimum_int_time(basket_weave)
+                    if input_ < minimum_int_time:
                         raise HeterodyneITCError(
                             'The requested integration time per point '
                             'is less than {0:.3f} seconds which is the '
-                            'minimum possible sample time. '
+                            'minimum possible sample time{1}. '
                             'Please increase the integration time per point '
-                            'to at least {0:.3f} seconds.'.format(
-                                self.int_time_minimum))
+                            'to at least {0:.3f} seconds{2}.'.format(
+                                minimum_int_time,
+                                (', allowing for basket weaving' if basket_weave else ''),
+                                (' or deselect basket weave' if basket_weave else '')))
 
                     rms = self._rms_in_integration_time(
                         time=input_,
@@ -418,7 +435,9 @@ class HeterodyneITC(object):
                         n_points=n_points, separate_offs=separate_offs,
                         continuum_mode=continuum_mode)
 
-                    self._check_int_time(int_time, 'requested elapsed time')
+                    self._check_int_time(
+                        int_time, 'requested elapsed time',
+                        basket_weave=basket_weave)
 
                     rms = self._rms_in_integration_time(
                         time=int_time,
@@ -498,7 +517,7 @@ class HeterodyneITC(object):
                 raise HeterodyneITCError(
                     'This receiver does not support frequency switching.')
 
-    def _check_int_time(self, int_time, origin):
+    def _check_int_time(self, int_time, origin, basket_weave=False):
         """
         Check whether the integration time is allowed.
 
@@ -507,15 +526,19 @@ class HeterodyneITC(object):
         The "origin" is used in the text of the error message.
         """
 
-        if int_time < self.int_time_minimum:
+        minimum_int_time = self.get_minimum_int_time(basket_weave)
+
+        if int_time < minimum_int_time:
             raise HeterodyneITCError(
                 'The {} led to an integration time of {:.3f} seconds per '
                 'point. '
                 'This is less than {:.3f} seconds which is the minimum '
-                'possible sample time. '
+                'possible sample time{}. '
                 'Please try adjusting the input parameters to '
-                'increase the integration time per point.'.format(
-                    origin, int_time, self.int_time_minimum))
+                'increase the integration time per point{}.'.format(
+                    origin, int_time, minimum_int_time,
+                    (', allowing for basket weaving' if basket_weave else ''),
+                    (' or deselecting basket weave' if basket_weave else '')))
 
     def _get_efficiencies_temperatures(
             self, receiver, freq, tau_225, zenith_angle_deg,
