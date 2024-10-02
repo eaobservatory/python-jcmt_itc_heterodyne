@@ -339,6 +339,8 @@ class HeterodyneITC(object):
             rmss = []
 
             for pass_ in range(0, passes):
+                pass_extra = {} if (passes > 1) else extra_output
+
                 dy_adjusted = dy
 
                 if map_mode == self.RASTER:
@@ -378,6 +380,9 @@ class HeterodyneITC(object):
                         else:
                             n_rows = int((dim_x + 2 * overscan_y) / dy) + 1
 
+                    pass_extra['raster_n_points'] = n_points
+                    pass_extra['raster_n_rows'] = n_rows
+
                 if calc_mode == self.RMS_TO_TIME:
                     int_time = self._integration_time_for_rms(
                         rms=input_,
@@ -394,7 +399,8 @@ class HeterodyneITC(object):
                         time=int_time, n_rows=n_rows,
                         map_mode=map_mode, sw_mode=sw_mode,
                         n_points=n_points, separate_offs=separate_offs,
-                        continuum_mode=continuum_mode)
+                        continuum_mode=continuum_mode,
+                        extra_output=pass_extra)
 
                     int_times.append(int_time)
                     elapsed_times.append(elapsed_time)
@@ -423,7 +429,8 @@ class HeterodyneITC(object):
                         time=input_, n_rows=n_rows,
                         map_mode=map_mode, sw_mode=sw_mode,
                         n_points=n_points, separate_offs=separate_offs,
-                        continuum_mode=continuum_mode)
+                        continuum_mode=continuum_mode,
+                        extra_output=pass_extra)
 
                     rmss.append(rms)
                     elapsed_times.append(elapsed_time)
@@ -433,7 +440,8 @@ class HeterodyneITC(object):
                         elapsed=input_, n_rows=n_rows,
                         map_mode=map_mode, sw_mode=sw_mode,
                         n_points=n_points, separate_offs=separate_offs,
-                        continuum_mode=continuum_mode)
+                        continuum_mode=continuum_mode,
+                        extra_output=pass_extra)
 
                     self._check_int_time(
                         int_time, 'requested elapsed time',
@@ -448,6 +456,11 @@ class HeterodyneITC(object):
 
                     int_times.append(int_time)
                     rmss.append(rms)
+
+                if passes > 1:
+                    assert pass_extra is not extra_output
+                    for (key, value) in pass_extra.items():
+                        extra_output['{}_{}'.format(key, pass_ + 1)] = value
 
             return {
                 'rms': None if not rmss else (sum(rmss) / passes),
