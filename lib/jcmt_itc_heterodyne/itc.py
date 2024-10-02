@@ -318,14 +318,8 @@ class HeterodyneITC(object):
             extra_output['t_sys'] = t_sys
 
             if map_mode == self.RASTER:
-                overscan_x = 0.0
-                overscan_y = 0.0
-
                 array_info = HeterodyneReceiver.get_receiver_info(
                     receiver).array
-
-                if (array_info is not None) and array_overscan:
-                    overscan_x = 0.5 * array_info.size
 
                 passes = 2 if basket_weave else 1
 
@@ -341,26 +335,14 @@ class HeterodyneITC(object):
             for pass_ in range(0, passes):
                 pass_extra = {} if (passes > 1) else extra_output
 
-                dy_adjusted = dy
+                if map_mode != self.RASTER:
+                    dy_adjusted = dy
 
-                if map_mode == self.RASTER:
+                else:
                     if pass_ == 0:
                         # Non-basket weave, or primary basket-weave direction.
-                        # TODO: should probably be ceil rather than floor + 1
-                        n_points = int((dim_x + 2 * overscan_x) / dx) + 1
-
-                        if ((array_info is not None) and
-                                ((dim_y + 2 * overscan_y) <=
-                                    array_info.footprint)):
-                            # Map height less than array footprint: do one scan
-                            # and set dy=footprint to ensure multiscan factor
-                            # is 1.
-                            # TODO: better to calculate multiscan here rather
-                            # than pass dy to calculation routines?
-                            n_rows = 1
-                            dy_adjusted = array_info.footprint
-                        else:
-                            n_rows = int((dim_y + 2 * overscan_y) / dy) + 1
+                        (n_rows, n_points, dy_adjusted) = self._get_raster_parameters(
+                            dim_x, dim_y, dx, dy, array_info, array_overscan)
 
                     else:
                         # Secondary basket-weave direction: scan along "dim_y"
@@ -368,17 +350,8 @@ class HeterodyneITC(object):
                         # still along scan direction (y)
                         # (and overscan_y / dy
                         # still across scan direction (x)).
-                        # TODO: should probably be ceil rather than floor + 1
-                        n_points = int((dim_y + 2 * overscan_x) / dx) + 1
-
-                        if ((array_info is not None) and
-                                ((dim_x + 2 * overscan_y)
-                                    <= array_info.footprint)):
-                            # Map width < footprint: as above for non-BW.
-                            n_rows = 1
-                            dy_adjusted = array_info.footprint
-                        else:
-                            n_rows = int((dim_x + 2 * overscan_y) / dy) + 1
+                        (n_rows, n_points, dy_adjusted) = self._get_raster_parameters(
+                            dim_y, dim_x, dx, dy, array_info, array_overscan)
 
                     pass_extra['raster_n_points'] = n_points
                     pass_extra['raster_n_rows'] = n_rows
@@ -480,6 +453,38 @@ class HeterodyneITC(object):
                 raise HeterodyneITCError(
                     'Negative square root error occurred during calculation.')
             raise
+
+    def _get_raster_parameters(
+            self, dim_x, dim_y, dx, dy, array_info, array_overscan):
+        """
+        Obtain raster map parameters: n_rows, n_points and adjusted dy.
+        """
+
+        overscan_x = 0.0
+        overscan_y = 0.0
+
+        if (array_info is not None) and array_overscan:
+            overscan_x = 0.5 * array_info.size
+
+        dy_adjusted = dy
+
+        # TODO: should probably be ceil rather than floor + 1
+        n_points = int((dim_x + 2 * overscan_x) / dx) + 1
+
+        if ((array_info is not None)
+                and ((dim_y + 2 * overscan_y) <= array_info.footprint)):
+            # Map height less than array footprint: do one scan
+            # and set dy=footprint to ensure multiscan factor
+            # is 1.
+            # TODO: better to calculate multiscan here rather
+            # than pass dy to calculation routines?
+            n_rows = 1
+            dy_adjusted = array_info.footprint
+
+        else:
+            n_rows = int((dim_y + 2 * overscan_y) / dy) + 1
+
+        return (n_rows, n_points, dy_adjusted)
 
     def _check_mode(self, receiver, map_mode, sw_mode, separate_offs):
         """
