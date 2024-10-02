@@ -1,5 +1,5 @@
 # Copyright (C) 2007-2009 Science and Technology Facilities Council.
-# Copyright (C) 2015-2023 East Asian Observatory
+# Copyright (C) 2015-2024 East Asian Observatory
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
 from collections import namedtuple, OrderedDict
-from math import acos, atan, cos, degrees, exp, radians, sqrt
+from math import acos, atan, ceil, cos, degrees, exp, radians, sqrt
 
 from .error import HeterodyneITCError
 from .receiver import HeterodyneReceiver
@@ -37,7 +37,7 @@ j_tel = 265
 
 DurationParam = namedtuple(
     'DurationParam',
-    ('a', 'b', 'c', 'd', 'e'))
+    ('a', 'b', 'c', 'd', 'e', 'block_min'))
 
 
 class HeterodyneITC(object):
@@ -772,6 +772,7 @@ class HeterodyneITC(object):
         # c and d are often 0.
         c = 0
         d = 0
+        block_min = 30
 
         if continuum_mode:
             e = 1.2
@@ -817,6 +818,7 @@ class HeterodyneITC(object):
             b = 1.05
             c = 1.05
             d = 18
+            block_min = 45
 
         elif (sw_mode == self.FRSW and (
                 map_mode == self.JIGGLE or map_mode == self.GRID)):
@@ -829,13 +831,14 @@ class HeterodyneITC(object):
                 'map mode {0} and switching mode {1}'.format(
                     map_mode, sw_mode))
 
-        return DurationParam(a=a, b=b, c=c, d=d, e=e)
+        return DurationParam(a=a, b=b, c=c, d=d, e=e, block_min=block_min)
 
     def _elapsed_time_for_integration_time(
             self, time, n_rows,
             map_mode, sw_mode,
             n_points, separate_offs,
-            continuum_mode):
+            continuum_mode,
+            extra_output=None):
         """
         Calculate the elapsed time of an observation.
 
@@ -847,18 +850,24 @@ class HeterodyneITC(object):
             n_points=n_points, separate_offs=separate_offs,
             continuum_mode=continuum_mode)
 
-        return param.e * (
-            param.a + n_rows * (
+        time_src = param.e * n_rows * (
                 param.b * n_points * time +
                 param.c * sqrt(n_points) * time +
                 param.d)
-        )
+
+        if extra_output is not None:
+            extra_output['time_src'] = time_src
+
+        overhead = self._estimate_overhead(param, time_src, from_total=False)
+
+        return time_src + overhead
 
     def _integration_time_for_elapsed_time(
             self, elapsed, n_rows,
             map_mode, sw_mode,
             n_points, separate_offs,
-            continuum_mode):
+            continuum_mode,
+            extra_output=None):
         """
         Calculate the integration time of an observation based on the
         elapsed time.
@@ -871,8 +880,29 @@ class HeterodyneITC(object):
             n_points=n_points, separate_offs=separate_offs,
             continuum_mode=continuum_mode)
 
+        overhead = self._estimate_overhead(param, elapsed, from_total=True)
+
+        time_src = elapsed - overhead
+
+        if extra_output is not None:
+            extra_output['time_src'] = time_src
+
         time = (
-            (elapsed / param.e - param.a - n_rows * param.d) /
+            (time_src / param.e - n_rows * param.d) /
             (n_rows * (param.b * n_points + param.c * sqrt(n_points))))
 
         return time
+
+    def _estimate_overhead(self, param, time_sec, from_total=False):
+        """
+        Estimate observing overhead in seconds.
+        """
+
+        block_sec = param.block_min * 60.0
+
+        overhead_sec = param.e * param.a
+
+        if from_total:
+            block_sec += overhead_sec
+
+        return overhead_sec * ceil(time_sec / block_sec)
