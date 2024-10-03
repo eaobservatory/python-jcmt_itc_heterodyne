@@ -315,19 +315,32 @@ class HeterodyneITC(object):
 
             extra_output['t_sys'] = t_sys
 
-            if map_mode == self.RASTER:
+            elapsed_times = []
+            rmss = []
+
+            passes = 1
+
+            if map_mode != self.RASTER:
+                basket_weave = False
+                n_rows = 1
+
+            else:
                 array_info = HeterodyneReceiver.get_receiver_info(
                     receiver).array
 
-                passes = 2 if basket_weave else 1
+                if basket_weave:
+                    passes = 2
 
-            else:
-                basket_weave = False
-                passes = 1
-                n_rows = 1
-
-            elapsed_times = []
-            rmss = []
+                    if calc_mode == self.ELAPSED_TO_RMS:
+                        basket_split = self._split_basket_weave_elapsed_time(
+                            elapsed_time=input_, receiver=receiver,
+                            freq_res=freq_res,
+                            dual_polarization=dual_polarization,
+                            continuum_mode=continuum_mode,
+                            dim_x=dim_x, dim_y=dim_y, dx=dx, dy=dy,
+                            array_info=array_info,
+                            array_overscan=array_overscan,
+                            t_sys=t_sys)
 
             for pass_ in range(0, passes):
                 pass_extra = {} if (passes > 1) else extra_output
@@ -415,10 +428,9 @@ class HeterodyneITC(object):
                     elapsed_times.append(elapsed_time)
 
                 elif calc_mode == self.ELAPSED_TO_RMS:
-                    # TODO: divide time properly between the directions.
                     elapsed_time = input_
                     if basket_weave:
-                        elapsed_time /= 2.0
+                        elapsed_time *= basket_split[pass_]
 
                     int_time = self._integration_time_for_elapsed_time(
                         elapsed=elapsed_time, n_rows=n_rows,
@@ -510,6 +522,111 @@ class HeterodyneITC(object):
             n_rows = int((dim_y + 2 * overscan_y) / dy) + 1
 
         return (n_rows, n_points, dy_adjusted)
+
+    def _split_basket_weave_elapsed_time(self, **kwargs):
+        """
+        Attempt to determine how best to split the given elapsed time
+        into two directions of a basket weaved raster.  Returns
+        a list giving the fraction of time to spend in each direction.
+        """
+
+        best_frac = None
+        best_ratio = None
+
+        frac_min = 0.01
+        frac_max = 1.00
+        frac_step = 0.05
+
+        for step in range(0, 3):
+            frac = frac_min
+            frac_valid_min = None
+            frac_valid_max = None
+            while frac < frac_max:
+                try:
+                    rms_ratio = self._split_basket_weave_rms_ratio(
+                        frac=frac, **kwargs)
+
+                    if ((best_ratio is None)
+                            or (abs(rms_ratio - 1.0) < abs(best_ratio - 1))):
+                        best_frac = frac
+                        best_ratio = rms_ratio
+
+                    frac_valid_max = frac
+                    if frac_valid_min is None:
+                        frac_valid_min = frac
+
+                except HeterodyneITCError:
+                    pass
+
+                frac += frac_step
+
+            if best_frac is None:
+                raise HeterodyneITCError(
+                    'The basket weave splitting algorithm was unable to '
+                    'divide the given elapsed time into two useable halves. '
+                    'Please try increasing the elapsed time or decreasing '
+                    'the map size in case the integration time per point '
+                    'is below the minimum possible sample time.')
+
+            frac_step /= 10.0
+            frac_min = max(frac_valid_min, best_frac - 15 * frac_step)
+            frac_max = max(frac_valid_min, best_frac + 16 * frac_step)
+
+        return [best_frac, 1.0 - best_frac]
+
+    def _split_basket_weave_rms_ratio(
+            self, frac, elapsed_time, receiver, freq_res,
+            dual_polarization, continuum_mode,
+            dim_x, dim_y, dx, dy, array_info, array_overscan,
+            t_sys):
+        # Assumed parameters for raster mode.
+        map_mode = self.RASTER
+        sw_mode = self.PSSW
+        separate_offs = False
+
+        # First direction.
+        elapsed_part = frac * elapsed_time
+
+        (n_rows, n_points, dy_adjusted) = self._get_raster_parameters(
+            dim_x, dim_y, dx, dy, array_info, array_overscan)
+
+        int_time = self._integration_time_for_elapsed_time(
+            elapsed=elapsed_part, n_rows=n_rows,
+            map_mode=map_mode, sw_mode=sw_mode,
+            n_points=n_points, separate_offs=separate_offs,
+            continuum_mode=continuum_mode)
+
+        self._check_int_time(int_time, 'splitting algorithm')
+
+        rms_1 = self._rms_in_integration_time(
+            time=int_time,
+            receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
+            n_points=n_points, separate_offs=separate_offs,
+            dual_polarization=dual_polarization,
+            t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
+
+        # Second direction.
+        elapsed_part = (1.0 - frac) * elapsed_time
+
+        (n_rows, n_points, dy_adjusted) = self._get_raster_parameters(
+            dim_y, dim_x, dx, dy, array_info, array_overscan)
+
+        int_time = self._integration_time_for_elapsed_time(
+            elapsed=elapsed_part, n_rows=n_rows,
+            map_mode=map_mode, sw_mode=sw_mode,
+            n_points=n_points, separate_offs=separate_offs,
+            continuum_mode=continuum_mode)
+
+        self._check_int_time(int_time, 'splitting algorithm')
+
+        rms_2 = self._rms_in_integration_time(
+            time=int_time,
+            receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
+            n_points=n_points, separate_offs=separate_offs,
+            dual_polarization=dual_polarization,
+            t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
+
+        return rms_1 / rms_2
 
     def _check_mode(self, receiver, map_mode, sw_mode, separate_offs):
         """
