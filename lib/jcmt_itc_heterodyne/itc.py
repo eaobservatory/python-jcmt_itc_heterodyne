@@ -20,7 +20,7 @@ from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
 from collections import namedtuple, OrderedDict
-from math import acos, atan, ceil, cos, degrees, exp, radians, sqrt
+from math import acos, atan, ceil, cos, degrees, exp, pow, radians, sqrt
 
 from .error import HeterodyneITCError
 from .receiver import HeterodyneReceiver
@@ -199,7 +199,6 @@ class HeterodyneITC(object):
 
         if with_extra_output:
             extra = output['extra']
-            extra['int_time'] = output['int_time']
             return (result, extra)
 
         return result
@@ -237,7 +236,6 @@ class HeterodyneITC(object):
 
         if with_extra_output:
             extra = output['extra']
-            extra['int_time'] = output['int_time']
             return (result, extra)
 
         return result
@@ -328,7 +326,6 @@ class HeterodyneITC(object):
                 passes = 1
                 n_rows = 1
 
-            int_times = []
             elapsed_times = []
             rmss = []
 
@@ -368,6 +365,11 @@ class HeterodyneITC(object):
                         int_time, 'requested target sensitivity',
                         basket_weave=basket_weave)
 
+                    if basket_weave:
+                        int_time /= 2.0
+
+                    pass_extra['int_time'] = int_time
+
                     elapsed_time = self._elapsed_time_for_integration_time(
                         time=int_time, n_rows=n_rows,
                         map_mode=map_mode, sw_mode=sw_mode,
@@ -375,7 +377,6 @@ class HeterodyneITC(object):
                         continuum_mode=continuum_mode,
                         extra_output=pass_extra)
 
-                    int_times.append(int_time)
                     elapsed_times.append(elapsed_time)
 
                 elif calc_mode == self.INT_TIME_TO_RMS:
@@ -391,15 +392,20 @@ class HeterodyneITC(object):
                                 (', allowing for basket weaving' if basket_weave else ''),
                                 (' or deselect basket weave' if basket_weave else '')))
 
+                    int_time = input_
+                    if basket_weave:
+                        int_time /= 2.0
+                        pass_extra['int_time'] = int_time
+
                     rms = self._rms_in_integration_time(
-                        time=input_,
+                        time=int_time,
                         receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
                         n_points=n_points, separate_offs=separate_offs,
                         dual_polarization=dual_polarization,
                         t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
 
                     elapsed_time = self._elapsed_time_for_integration_time(
-                        time=input_, n_rows=n_rows,
+                        time=int_time, n_rows=n_rows,
                         map_mode=map_mode, sw_mode=sw_mode,
                         n_points=n_points, separate_offs=separate_offs,
                         continuum_mode=continuum_mode,
@@ -409,16 +415,22 @@ class HeterodyneITC(object):
                     elapsed_times.append(elapsed_time)
 
                 elif calc_mode == self.ELAPSED_TO_RMS:
+                    # TODO: divide time properly between the directions.
+                    elapsed_time = input_
+                    if basket_weave:
+                        elapsed_time /= 2.0
+
                     int_time = self._integration_time_for_elapsed_time(
-                        elapsed=input_, n_rows=n_rows,
+                        elapsed=elapsed_time, n_rows=n_rows,
                         map_mode=map_mode, sw_mode=sw_mode,
                         n_points=n_points, separate_offs=separate_offs,
                         continuum_mode=continuum_mode,
                         extra_output=pass_extra)
 
                     self._check_int_time(
-                        int_time, 'requested elapsed time',
-                        basket_weave=basket_weave)
+                        int_time, 'requested elapsed time')
+
+                    pass_extra['int_time'] = int_time
 
                     rms = self._rms_in_integration_time(
                         time=int_time,
@@ -427,7 +439,6 @@ class HeterodyneITC(object):
                         dual_polarization=dual_polarization,
                         t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
 
-                    int_times.append(int_time)
                     rmss.append(rms)
 
                 if passes > 1:
@@ -436,11 +447,10 @@ class HeterodyneITC(object):
                         extra_output['{}_{}'.format(key, pass_ + 1)] = value
 
             return {
-                'rms': None if not rmss else (sum(rmss) / passes),
-                'int_time': None if not int_times else (
-                    sum(int_times) / passes),
+                'rms': None if not rmss else (
+                    self._combine_rms(rmss)),
                 'elapsed_time': None if not elapsed_times else (
-                    sum(elapsed_times) / passes),
+                    sum(elapsed_times)),
                 'extra': extra_output,
             }
 
@@ -453,6 +463,21 @@ class HeterodyneITC(object):
                 raise HeterodyneITCError(
                     'Negative square root error occurred during calculation.')
             raise
+
+    def _combine_rms(self, rmss):
+        """
+        Calculate RMS for combination of observations.
+        """
+
+        if 1 == len(rmss):
+            return rmss[0]
+
+        sum_ = 0.0
+
+        for rms in rmss:
+            sum_ += pow(rms, -2)
+
+        return pow(sum_, -0.5)
 
     def _get_raster_parameters(
             self, dim_x, dim_y, dx, dy, array_info, array_overscan):

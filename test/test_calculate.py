@@ -39,21 +39,30 @@ class CalculateTest(TestCase):
 
         (result, extra) = itc.calculate_time(
             rms, *args, with_extra_output=True)
+        result_int_time = (
+            extra['int_time'] if 'int_time' in extra
+            else (extra['int_time_1'] + extra['int_time_2']))
+
         self.assertAlmostEqual(extra['t_rx'], t_rx, delta=0.1)
         self.assertAlmostEqual(extra['t_sys'], t_sys, delta=0.1)
-        self.assertAlmostEqual(extra['int_time'], int_, delta=0.01)
+        self.assertAlmostEqual(result_int_time, int_, delta=0.01)
         self.assertAlmostEqual(result, elapsed, delta=0.1)
 
         (result, extra) = itc.calculate_rms_for_elapsed_time(
             elapsed, *args, with_extra_output=True)
+        result_int_time = (
+            extra['int_time'] if 'int_time' in extra
+            else (extra['int_time_1'] + extra['int_time_2']))
+
         self.assertAlmostEqual(extra['t_rx'], t_rx, delta=0.1)
         self.assertAlmostEqual(extra['t_sys'], t_sys, delta=0.1)
-        self.assertAlmostEqual(extra['int_time'], int_,
+        self.assertAlmostEqual(result_int_time, int_,
                                delta=(0.01 * tol_factor))
         self.assertAlmostEqual(result, rms, delta=0.1)
 
         (result, extra) = itc.calculate_rms_for_int_time(
             int_, *args, with_extra_output=True)
+
         self.assertAlmostEqual(extra['t_rx'], t_rx, delta=0.1)
         self.assertAlmostEqual(extra['t_sys'], t_sys, delta=0.1)
         self.assertAlmostEqual(result, rms, delta=0.1)
