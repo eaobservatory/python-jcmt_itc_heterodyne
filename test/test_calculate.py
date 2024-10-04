@@ -152,11 +152,11 @@ class CalculateTest(TestCase):
             150, 300, 10, 10, False, False, False)
 
         self._test_calculation(
-            1.5, 4.43, 3389.9, 73.0, 391.2,
+            1.5, 4.43, 3812.9, 73.0, 391.2,
             HeterodyneReceiver.A3, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             220, 0.0305, 0.15, 50, True, False, None,
             150, 300, 10, 10, True, False, False,
-            tol_factor=10.0)
+            tol_factor=5.0)
 
     def test_rxw(self):
         # RxW Grid PSSW
@@ -248,11 +248,11 @@ class CalculateTest(TestCase):
             1800, 900, 7.27, 116.4, False, False, False)
 
         self._test_calculation(
-            0.57735, 11.417, 29257.3, 86.9, 1260.4,
+            0.57735, 11.417, 29473.3, 86.9, 1260.4,
             HeterodyneReceiver.HARP, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             345, 0.977, 0.25, 50, False, False, None,
             1800, 900, 7.27, 116.4, True, False, False,
-            tol_factor=10.0)
+            tol_factor=5.0)
 
         self._test_calculation(
             0.57735, 0.187, 1778.7, 84.3, 627.3,
