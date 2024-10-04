@@ -378,19 +378,19 @@ class HeterodyneITC(object):
                     pass_extra['raster_n_rows'] = n_rows
 
                 if calc_mode == self.RMS_TO_TIME:
+                    rms = input_
+                    if basket_weave:
+                        rms *= sqrt(2.0)
+
                     int_time = self._integration_time_for_rms(
-                        rms=input_,
+                        rms=rms,
                         receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
                         n_points=n_points, separate_offs=separate_offs,
                         dual_polarization=dual_polarization,
                         t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
 
                     self._check_int_time(
-                        int_time, 'requested target sensitivity',
-                        basket_weave=basket_weave)
-
-                    if basket_weave:
-                        int_time /= 2.0
+                        int_time, 'requested target sensitivity')
 
                     pass_extra['int_time'] = int_time
 
