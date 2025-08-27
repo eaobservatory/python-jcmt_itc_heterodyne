@@ -38,9 +38,13 @@
 """
 Usage:
     mktau_sma_am.py [--ot]
+    mktau_sma_am.py --mm <mm>
+    mktau_sma_am.py --opacity <opacity>
 
 Options:
     --ot            Observing tool style output
+    --mm <mm>       Calculate opacity for given mm of water
+    --opacity <opacity>  Calculate mm for given opacity
 """
 
 from __future__ import print_function
@@ -55,12 +59,43 @@ from jcmt_itc_heterodyne import HeterodyneReceiver
 # (This should perhaps be made a command line option.)
 AM_CONFIG = 'MaunaKea_ex25.amc'
 
+# Linear fit to the table at the start of the config file mentioned
+# above, made using libreoffice calc.
+PWV_SCALE_M = 1.8561
+PWV_SCALE_C = 0.0010379
+
 
 def main():
     args = docopt(__doc__)
 
-    mode_ot = args['--ot']
+    if args['--mm']:
+        mm = pwv_to_scaled_mm(float(args['--mm']))
 
+        values = run_am(225.0, 225.0, 0.01, mm)
+
+        tau = values[0][1]
+        print(tau)
+
+    elif args['--opacity']:
+        tau = float(args['--opacity'])
+
+        mm = find_mm(tau)
+
+        print(scaled_mm_to_pwv(mm))
+
+    else:
+        generate_data(args['--ot'])
+
+
+def scaled_mm_to_pwv(mm):
+    return PWV_SCALE_M * mm + PWV_SCALE_C
+
+
+def pwv_to_scaled_mm(pwv):
+    return (pwv - PWV_SCALE_C) / PWV_SCALE_M
+
+
+def generate_data(mode_ot):
     mms = []
     kwargs = {}
     if not mode_ot:
@@ -98,6 +133,7 @@ def main():
                 print(freq, d, file=f)
 
 
+# Note: actually a "trop_h2o_scale" factor rather than real mm PWV.
 def find_mm(tau):
     print('Binary search to find starting conditions for:', tau)
 
