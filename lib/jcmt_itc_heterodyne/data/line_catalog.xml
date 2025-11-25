@@ -242,6 +242,7 @@ if any additionas are made to the list.
         <transition frequency="260293.5364" name="10 2 - 10 1"/>
     </species>
     <species name="CH3OH">
+        <transition frequency="84521.172" name="5 -1 0 - 4 0 0"/>
         <transition frequency="95169.391" name="8 0+ 0 - 7 1+ 0"/>
         <transition frequency="181296.03" name="7 1 4 - 6 0 3"/>
         <transition frequency="181771.05" name="4 2 4 - 5 1 4"/>
