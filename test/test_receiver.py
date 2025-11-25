@@ -20,15 +20,10 @@ from __future__ import absolute_import, division, print_function, \
 
 from collections import OrderedDict
 from sys import version_info
-from unittest import TestCase
+from .compat import TestCase, string_type
 
 from jcmt_itc_heterodyne import HeterodyneITCError, HeterodyneReceiver
 from jcmt_itc_heterodyne.receiver import ArrayInfo, ReceiverInfo
-
-if version_info[0] < 3:
-    string_type = unicode
-else:
-    string_type = str
 
 
 class ReceiverTest(TestCase):

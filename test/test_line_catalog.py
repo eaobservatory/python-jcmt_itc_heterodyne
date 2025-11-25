@@ -19,15 +19,9 @@ from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
 from collections import OrderedDict
-from sys import version_info
-from unittest import TestCase
+from .compat import TestCase, string_type
 
 from jcmt_itc_heterodyne.line_catalog import get_line_catalog
-
-if version_info[0] < 3:
-    string_type = unicode
-else:
-    string_type = str
 
 
 class LineCatalogTest(TestCase):

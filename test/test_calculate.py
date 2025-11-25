@@ -18,7 +18,7 @@
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
-from unittest import TestCase
+from .compat import TestCase
 
 from jcmt_itc_heterodyne import HeterodyneITC, HeterodyneITCError, \
     HeterodyneReceiver
@@ -274,18 +274,18 @@ class CalculateTest(TestCase):
             300, 400, 7.27, 7.3, False, False, False,
         ]
 
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 HeterodyneITCError,
                 '^The requested integration time per point is less than'):
 
             itc.calculate_rms_for_int_time(0.09, *args)
 
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 HeterodyneITCError,
                 '^The requested target sensitivity led to an integration t'):
             itc.calculate_time(1.0, *args)
 
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 HeterodyneITCError,
                 '^The requested elapsed time led to an integration t'):
 

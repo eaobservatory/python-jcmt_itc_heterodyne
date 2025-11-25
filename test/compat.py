@@ -1,4 +1,4 @@
-# Copyright (C) 2024 East Asian Observatory
+# Copyright (C) 2016-2025 East Asian Observatory
 # All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or modify it under
@@ -18,16 +18,28 @@
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
-from .compat import TestCase
+from sys import version_info
 
-from jcmt_itc_heterodyne import HeterodyneITC, HeterodyneITCError, \
-    HeterodyneReceiver
+python_version = version_info[0]
 
 
-class ITCMethodsTest(TestCase):
-    def test_combine_rms(self):
-        itc = HeterodyneITC()
+if python_version < 3:
+    # Python 2.
 
-        self.assertAlmostEqual(itc._combine_rms([2]), 2, delta=0.01)
-        self.assertAlmostEqual(itc._combine_rms([2, 2]), 1.41, delta=0.01)
-        self.assertAlmostEqual(itc._combine_rms([2, 2, 2, 2]), 1, delta=0.01)
+    from unittest import TestCase as BaseTestCase
+
+    class TestCase(BaseTestCase):
+        def assertRaisesRegex(self, *args, **kwargs):
+            return self.assertRaisesRegexp(*args, **kwargs)
+
+        def assertRegex(self, *args, **kwargs):
+            return self.assertRegexpMatches(*args, **kwargs)
+
+    string_type = unicode
+
+else:
+    # Python 3.
+
+    from unittest import TestCase
+
+    string_type = str
