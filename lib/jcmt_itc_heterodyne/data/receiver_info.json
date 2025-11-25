@@ -12,12 +12,12 @@
         "frsw_available": false,
         "pixel_size": 29.3,
         "array": null,
-        "t_rx_lo": false,
-        "t_rx": [
-            [85.0, 126.9],
-            [93.0, 137.7]
+        "t_rx_lo": true,
+        "t_rx": null,
+        "t_rx_usb": [
+            [79.0, 126.9],
+            [87.0, 137.7]
         ],
-        "t_rx_usb": null,
         "t_rx_lsb": null,
         "t_rx_if": null,
         "best_sideband": null

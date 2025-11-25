@@ -1,4 +1,4 @@
-# Copyright (C) 2015-2023 East Asian Observatory
+# Copyright (C) 2015-2025 East Asian Observatory
 # All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or modify it under
@@ -22,7 +22,7 @@ from collections import OrderedDict
 from sys import version_info
 from unittest import TestCase
 
-from jcmt_itc_heterodyne import HeterodyneReceiver
+from jcmt_itc_heterodyne import HeterodyneITCError, HeterodyneReceiver
 from jcmt_itc_heterodyne.receiver import ArrayInfo, ReceiverInfo
 
 if version_info[0] < 3:
@@ -65,3 +65,40 @@ class ReceiverTest(TestCase):
     def test_interpolated_t_rx(self):
         self.assertAlmostEqual(HeterodyneReceiver.get_interpolated_t_rx(
             HeterodyneReceiver.A3, 255.5), 124.5)
+
+    def test_best_sideband(self):
+        info = HeterodyneReceiver.get_receiver_info(HeterodyneReceiver.UU)
+
+        sideband = HeterodyneReceiver._find_best_sideband(info, 240)
+        self.assertEqual(sideband, 'LSB')
+        sideband = HeterodyneReceiver._find_best_sideband(info, 260)
+        self.assertEqual(sideband, 'USB')
+
+        # Test we get an error without the "best_sideband" attribute.
+        info = info._replace(best_sideband=None)
+
+        with self.assertRaisesRegex(
+                HeterodyneITCError,
+                'does not have preferred sideband data'):
+            HeterodyneReceiver._find_best_sideband(info, 240)
+
+        # Test a receiver where only one sideband is available.
+        info = HeterodyneReceiver.get_receiver_info(HeterodyneReceiver.ALAIHI)
+
+        sideband = HeterodyneReceiver._find_best_sideband(info, 90)
+        self.assertEqual(sideband, 'USB')
+
+        # Should get an error if there is no useable sideband data.
+        trx_data = info.t_rx_usb
+        info = info._replace(t_rx_usb=None)
+
+        with self.assertRaisesRegex(
+                HeterodyneITCError,
+                'appears to have no available sideband'):
+            HeterodyneReceiver._find_best_sideband(info, 90)
+
+        # Try setting the data for the LSB side so it can be selected.
+        info = info._replace(t_rx_lsb=trx_data)
+
+        sideband = HeterodyneReceiver._find_best_sideband(info, 90)
+        self.assertEqual(sideband, 'LSB')

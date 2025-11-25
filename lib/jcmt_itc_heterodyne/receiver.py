@@ -1,5 +1,5 @@
 # Copyright (C) 2007-2009 Science and Technology Facilities Council.
-# Copyright (C) 2015-2023 East Asian Observatory
+# Copyright (C) 2015-2025 East Asian Observatory
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -143,7 +143,9 @@ class HeterodyneReceiver(object):
             if sideband == 'LSB':
                 freq = sky_freq + if_freq
 
-                if sky_freq > (info.f_max - 2.0 * info.f_if):
+                # TODO: check LO frequency is in range instead.
+                if ((sky_freq > (info.f_max - 2.0 * info.f_if))
+                        and (info.t_rx_usb is not None)):
                     raise HeterodyneITCError(
                         'The requested frequency ({:.1f} GHz) may be too high '
                         'to observe in the lower sideband.'.format(sky_freq))
@@ -154,7 +156,9 @@ class HeterodyneReceiver(object):
             elif sideband == 'USB':
                 freq = sky_freq - if_freq
 
-                if sky_freq < (info.f_min + 2.0 * info.f_if):
+                # TODO: check LO frequency is in range instead.
+                if ((sky_freq < (info.f_min + 2.0 * info.f_if))
+                        and (info.t_rx_lsb is not None)):
                     raise HeterodyneITCError(
                         'The requested frequency ({:.1f} GHz) may be too low '
                         'to observe in the upper sideband.'.format(sky_freq))
@@ -191,14 +195,32 @@ class HeterodyneReceiver(object):
     def _find_best_sideband(cls, info, sky_freq):
         is_lsb = True
 
-        if info.best_sideband is None:
-            raise Exception('Receiver does not have preferred sideband data')
+        if (info.t_rx_lo and (
+                (info.t_rx_usb is None)
+                or (info.t_rx_lsb is None))):
+            # We are working in terms of LO and only one sideband is available,
+            # so select that one.
 
-        for freq_transition in info.best_sideband:
-            if sky_freq < freq_transition:
-                break
+            if info.t_rx_lsb is not None:
+                pass
+            elif info.t_rx_usb is not None:
+                is_lsb = False
+            else:
+                raise HeterodyneITCError(
+                    'This receiver appears to have no available sideband.')
 
-            is_lsb = not is_lsb
+        else:
+            # Use the "best_sideband" attribute to select one.
+
+            if info.best_sideband is None:
+                raise HeterodyneITCError(
+                    'This receiver does not have preferred sideband data.')
+
+            for freq_transition in info.best_sideband:
+                if sky_freq < freq_transition:
+                    break
+
+                is_lsb = not is_lsb
 
         return 'LSB' if is_lsb else 'USB'
 
