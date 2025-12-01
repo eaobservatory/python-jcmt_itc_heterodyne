@@ -57,8 +57,9 @@ class HeterodyneReceiver(object):
     # Dictionary to contain the tau data at each 225 GHz opacity.  All entries
     # are initially None -- to be replaced with data read from the files as
     # needed.
-    _tau_data = OrderedDict(((x, None) for x in
-                             (0.015, 0.03, 0.05, 0.065, 0.1, 0.16, 0.2, 0.25, 0.32)))
+    _tau_data = OrderedDict(((x, None) for x in (
+        0.015, 0.03, 0.05, 0.065, 0.1, 0.16, 0.2, 0.25, 0.32
+    )))
 
     @classmethod
     def get_all_receivers(cls):
@@ -174,7 +175,8 @@ class HeterodyneReceiver(object):
 
         if t_rx_data is None:
             raise HeterodyneITCError(
-                'No receiver temperature data are available for the requested sideband.')
+                'No receiver temperature data are available '
+                'for the requested sideband.')
 
         # Determine which type of t_rx model we have for this instrument.
         if isinstance(t_rx_data[0], list):
