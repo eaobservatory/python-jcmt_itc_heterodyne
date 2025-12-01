@@ -25,7 +25,7 @@ import json
 from math import sin, cos, radians
 from pkgutil import get_data
 
-from .error import HeterodyneITCError
+from .error import HeterodyneITCError, HeterodyneITCFreqError
 
 
 ReceiverInfo = namedtuple(
@@ -108,10 +108,9 @@ class HeterodyneReceiver(object):
                 extra_output['if_freq'] = if_freq
 
         elif not (info.f_if_min <= if_freq <= info.f_if_max):
-            raise HeterodyneITCError(
-                'The requested intermediate frequency is not within '
-                'the available range ({} - {} GHz).'.format(
-                    info.f_if_min, info.f_if_max))
+            raise HeterodyneITCFreqError(
+                'requested intermediate frequency',
+                if_freq, info.f_if_min, info.f_if_max)
 
         # Determine which frequency and t_rx data to use.
         t_rx_data = info.t_rx

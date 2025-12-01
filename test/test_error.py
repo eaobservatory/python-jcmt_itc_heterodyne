@@ -1,4 +1,4 @@
-# Copyright (C) 2015-2025 East Asian Observatory
+# Copyright (C) 2025 East Asian Observatory
 # All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or modify it under
@@ -18,15 +18,17 @@
 from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
+from .compat import TestCase
 
-class HeterodyneITCError(Exception):
-    pass
+from jcmt_itc_heterodyne.error import HeterodyneITCError, \
+    HeterodyneITCFreqError
 
 
-class HeterodyneITCFreqError(HeterodyneITCError):
-    def __init__(self, description, value, f_min, f_max):
-        HeterodyneITCError.__init__(
-            self,
-            'The {} ({:.3f} GHz) is not within the '
-            'available range ({:.1f} - {:.1f} GHz).'.format(
-                description, value, f_min, f_max))
+class ErrorTest(TestCase):
+    def test_error(self):
+        with self.assertRaisesRegex(
+                HeterodyneITCError,
+                r'^The EXAMPLE FREQ \(123\.457 GHz\) is not within the '
+                r'available range \(234\.6 - 345\.7 GHz\)\.$'):
+            raise HeterodyneITCFreqError(
+                'EXAMPLE FREQ', 123.456789, 234.567, 345.678)
