@@ -1,7 +1,9 @@
 {
     "ʻAlaʻihi": {
-        "f_min": 86.0,
-        "f_max": 94.5,
+        "f_min": 84.2,
+        "f_max": 95.6,
+        "f_lo_min": 80.0,
+        "f_lo_max": 88.5,
         "f_if": 6.0,
         "f_if_min": 4.0,
         "f_if_max": 7.3,
@@ -35,6 +37,8 @@
     "ʻŪʻū": {
         "f_min": 215.0,
         "f_max": 270.0,
+        "f_lo_min": null,
+        "f_lo_max": null,
         "f_if": 6.0,
         "f_if_min": 4.0,
         "f_if_max": 7.3,
@@ -90,6 +94,8 @@
     "ʻĀweoweo": {
         "f_min": 276.0,
         "f_max": 372.0,
+        "f_lo_min": null,
+        "f_lo_max": null,
         "f_if": 5.0,
         "f_if_min": 4.0,
         "f_if_max": 7.3,
@@ -139,6 +145,8 @@
     "Kuntur": {
         "f_min": 609.0,
         "f_max": 715.0,
+        "f_lo_min": null,
+        "f_lo_max": null,
         "f_if": 5.5,
         "f_if_min": 4.0,
         "f_if_max": 7.3,
@@ -182,6 +190,8 @@
     "RxA3": {
         "f_min": 211.5,
         "f_max": 276.5,
+        "f_lo_min": null,
+        "f_lo_max": null,
         "f_if": 4.0,
         "f_if_min": 3.1,
         "f_if_max": 4.9,
@@ -275,6 +285,8 @@
     "HARP": {
         "f_min": 325,
         "f_max": 375,
+        "f_lo_min": null,
+        "f_lo_max": null,
         "f_if": 5.0,
         "f_if_min": 4.0,
         "f_if_max": 6.0,
@@ -332,6 +344,8 @@
     "RxWD": {
         "f_min": 630,
         "f_max": 710,
+        "f_lo_min": null,
+        "f_lo_max": null,
         "f_if": 4.0,
         "f_if_min": 3.1,
         "f_if_max": 4.9,

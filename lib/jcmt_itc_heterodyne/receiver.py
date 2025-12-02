@@ -30,7 +30,8 @@ from .error import HeterodyneITCError, HeterodyneITCFreqError
 
 ReceiverInfo = namedtuple(
     'ReceiverInfo',
-    ('name', 'f_min', 'f_max', 'f_if', 'f_if_min', 'f_if_max', 'n_mix',
+    ('name', 'f_min', 'f_max', 'f_lo_min', 'f_lo_max',
+     'f_if', 'f_if_min', 'f_if_max', 'n_mix',
      'ssb_available', 'dsb_available', 'frsw_available',
      'pixel_size', 'array', 'eta_tel', 't_rx', 't_rx_lo', 'best_sideband',
      't_rx_usb', 't_rx_lsb', 't_rx_if'))
@@ -134,18 +135,20 @@ class HeterodyneReceiver(object):
                 if extra_output is not None:
                     extra_output['sideband'] = sideband
 
+            # If one limit is present, the other should be too.
+            have_f_lo_limits = (info.f_lo_min is not None)
+
             # Check the sideband selection and calculate the LO frequency.
-            # Maybe it would be better to have frequency limits in terms
-            # of LO frequency, but currently we have them as sky frequency
-            # (and the web interface checks them).  For now do a rough check of
+            # It would be good to always have frequency limits in terms
+            # of LO frequency - currently we always have them as sky frequency
+            # (and the web interface checks them).  Do a rough check of
             # whether we are too close to the end of the band to use the
-            # requested sideband.
+            # requested sideband unless we do have LO frequency limits.
             if sideband == 'LSB':
                 freq = sky_freq + if_freq
 
-                # TODO: check LO frequency is in range instead.
                 if ((sky_freq > (info.f_max - 2.0 * info.f_if))
-                        and (info.t_rx_usb is not None)):
+                        and not have_f_lo_limits):
                     raise HeterodyneITCError(
                         'The requested frequency ({:.1f} GHz) may be too high '
                         'to observe in the lower sideband.'.format(sky_freq))
@@ -156,9 +159,8 @@ class HeterodyneReceiver(object):
             elif sideband == 'USB':
                 freq = sky_freq - if_freq
 
-                # TODO: check LO frequency is in range instead.
                 if ((sky_freq < (info.f_min + 2.0 * info.f_if))
-                        and (info.t_rx_lsb is not None)):
+                        and not have_f_lo_limits):
                     raise HeterodyneITCError(
                         'The requested frequency ({:.1f} GHz) may be too low '
                         'to observe in the upper sideband.'.format(sky_freq))
@@ -169,6 +171,20 @@ class HeterodyneReceiver(object):
             else:
                 raise HeterodyneITCError(
                     'The requested sideband was not recognized.')
+
+            if (have_f_lo_limits
+                    and not (info.f_lo_min <= freq <= info.f_lo_max)):
+                comment_adjustment = 'intermediate frequency'
+                if (info.t_rx_usb is not None) and (info.t_rx_lsb is not None):
+                    comment_adjustment = ' or '.join((
+                        'sideband', comment_adjustment))
+
+                raise HeterodyneITCFreqError(
+                    'local oscillator frequency',
+                    freq, info.f_lo_min, info.f_lo_max,
+                    comment='It is possible that the desired frequency could '
+                    'be reached by using a different {}.'.format(
+                        comment_adjustment))
 
             if extra_output is not None:
                 extra_output['lo_freq'] = freq
@@ -392,6 +408,9 @@ class HeterodyneReceiver(object):
 
                 info_obj = info_obj._replace(array=array_obj)
 
+            # Check consistency of data provided.
+            _assert_both_or_none(info_obj.f_lo_min, info_obj.f_lo_max)
+
             cls._info[receiver] = info_obj
 
     @classmethod
@@ -415,3 +434,13 @@ class HeterodyneReceiver(object):
             tau_values.append((float(freq), float(tau_freq)))
 
         cls._tau_data[tau] = tau_values
+
+
+def _assert_both_or_none(value_a, value_b):
+    """
+    Asserts that either both of the values are given or both are none.
+
+    I.e. asserts (a is none) xnor (b is none).
+    """
+
+    assert not ((value_a is None) ^ (value_b is None))

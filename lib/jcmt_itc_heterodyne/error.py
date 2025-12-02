@@ -24,9 +24,13 @@ class HeterodyneITCError(Exception):
 
 
 class HeterodyneITCFreqError(HeterodyneITCError):
-    def __init__(self, description, value, f_min, f_max):
-        HeterodyneITCError.__init__(
-            self,
+    def __init__(self, description, value, f_min, f_max, comment=None):
+        message = (
             'The {} ({:.3f} GHz) is not within the '
             'available range ({:.1f} - {:.1f} GHz).'.format(
                 description, value, f_min, f_max))
+
+        if comment is not None:
+            message = ' '.join((message, comment))
+
+        HeterodyneITCError.__init__(self, message)
