@@ -10,6 +10,7 @@ if any additionas are made to the list.
 -->
 <LineCatalog>
     <species name="CO">
+        <transition frequency="115271.2018" name="1 - 0"/>
         <transition frequency="230538.0" name="2 - 1"/>
         <transition frequency="345795.9899" name="3 - 2"/>
         <transition frequency="461040.7682" name="4 - 3"/>
@@ -26,6 +27,7 @@ if any additionas are made to the list.
         <transition frequency="1726602.5066" name="15 - 14"/>
     </species>
     <species name="13-CO">
+        <transition frequency="110201.3541" name="1 - 0"/>
         <transition frequency="220398.6765" name="2 - 1"/>
         <transition frequency="330587.9601" name="3 - 2"/>
         <transition frequency="440765.1668" name="4 - 3"/>
@@ -35,6 +37,7 @@ if any additionas are made to the list.
         <transition frequency="881272.8339" name="8 - 7"/>
     </species>
     <species name="C-18-O">
+        <transition frequency="109782.1734" name="1 - 0"/>
         <transition frequency="219560.3568" name="2 - 1"/>
         <transition frequency="329330.5453" name="3 - 2"/>
         <transition frequency="439088.7631" name="4 - 3"/>
@@ -45,6 +48,7 @@ if any additionas are made to the list.
         <transition frequency="987560.3837" name="9 - 8"/>
     </species>
     <species name="C-17-O">
+        <transition frequency="112359.2837" name="1 - 0"/>
         <transition frequency="224714.385" name="2 - 1"/>
         <transition frequency="337061.1298" name="3 - 2"/>
         <transition frequency="449395.3412" name="4 - 3"/>
