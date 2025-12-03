@@ -208,10 +208,15 @@ class HeterodyneReceiver(object):
         else:
             t_rx_interpolated = cls._evaluate_sincos_t_rx(t_rx_data, freq)
 
-        # Add IF-specific correct if available.
+        # Add IF-specific correction if available.
         if info.t_rx_if is not None:
-            t_rx_interpolated += cls._interpolate_t_rx_data(
-                info.t_rx_if, if_freq)
+            t_rx_if = cls._interpolate_t_rx_data(info.t_rx_if, if_freq)
+
+            if extra_output is not None:
+                extra_output['t_rx_base'] = t_rx_interpolated
+                extra_output['t_rx_if'] = t_rx_if
+
+            t_rx_interpolated += t_rx_if
 
         return t_rx_interpolated
 
