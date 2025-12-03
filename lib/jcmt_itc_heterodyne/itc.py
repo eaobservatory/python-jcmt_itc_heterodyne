@@ -1,5 +1,5 @@
 # Copyright (C) 2007-2009 Science and Technology Facilities Council.
-# Copyright (C) 2015-2024 East Asian Observatory
+# Copyright (C) 2015-2025 East Asian Observatory
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -787,7 +787,6 @@ class HeterodyneITC(object):
 
         if extra_output is not None:
             extra_output['tau'] = tau
-            extra_output['eta_sky'] = eta_sky
 
         return (eta_sky, eta_tel, t_sky, t_tel, t_im)
 
@@ -812,6 +811,7 @@ class HeterodyneITC(object):
 
         if extra_output is not None:
             extra_output['t_rx'] = t_rx
+            extra_output['eta_sky'] = eta_sky
 
         if not is_dsb:
             # Single sideband mode.
@@ -839,6 +839,9 @@ class HeterodyneITC(object):
         (eta_sky, eta_tel, t_sky, t_tel, t_im) = self._get_efficiencies_temperatures(
             receiver, freq, tau_225, zenith_angle_deg,
             extra_output=extra_output)
+
+        if extra_output is not None:
+            extra_output['eta_sky'] = eta_sky
 
         numerator = t_sys * eta_sky * eta_tel
 

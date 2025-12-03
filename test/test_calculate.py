@@ -1,4 +1,4 @@
-# Copyright (C) 2015-2024 East Asian Observatory
+# Copyright (C) 2015-2025 East Asian Observatory
 # All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or modify it under
@@ -68,6 +68,20 @@ class CalculateTest(TestCase):
         self.assertAlmostEqual(result, rms, delta=0.1)
         self.assertAlmostEqual(extra['elapsed_time'], elapsed,
                                delta=(5 * tol_factor))
+
+        # Test _estimate_t_rx_from_t_sys method - 'extra' values should match
+        # those of the other calculations.
+        trx_extra = {}
+        trx_result = itc._estimate_t_rx_from_t_sys(
+            args[0], args[3], args[5], args[6], args[7],
+            if_freq=None, sideband=None, t_sys=t_sys,
+            extra_output=trx_extra)
+
+        self.assertAlmostEqual(trx_result, t_rx, delta=0.1)
+        self.assertAlmostEqual(
+            trx_extra['tau'], extra['tau'], delta=0.001)
+        self.assertAlmostEqual(
+            trx_extra['eta_sky'], extra['eta_sky'], delta=0.001)
 
     def test_rxa(self):
         # RxA Grid PSSW
