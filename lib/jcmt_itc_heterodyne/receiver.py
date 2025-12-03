@@ -102,6 +102,13 @@ class HeterodyneReceiver(object):
 
         info = cls.get_receiver_info(receiver)
 
+        # Check sky frequency is in range.  (The web interface should do this
+        # but repeat the check to confirm and for stand-alone usage.)
+        if not (info.f_min <= sky_freq <= info.f_max):
+            raise HeterodyneITCFreqError(
+                'sky frequency',
+                sky_freq, info.f_min, info.f_max)
+
         # Determine IF frequency if not specified, in case we have t_rx data
         # in terms of LO frequency, or an IF-specific t_rx correction.
         if if_freq is None:
