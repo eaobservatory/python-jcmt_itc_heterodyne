@@ -35,10 +35,14 @@ Options:
     --pol <number>              Polarization to use
     --if <frequency>            Select values matching IF frequency
     --ifrelation                Output Trx vs IF instead of vs LO
+    --ifrelation-separate       Use separate sidebands in --ifrelation mode
     --prefix <prefix>           Output filename prefix
     --json                      Also write JSON (for receiver info file)
     --verbose, -v               Verbose
     --quiet, -q                 Quiet
+    --oversample <factor>       Oversample prior to filtering
+    --ignore-over <value>       Ingore values greater than this
+    --ignore-under <value>      Ingore values less than this
 """
 
 
@@ -77,6 +81,14 @@ def main():
     if_ = None
     if args['--if']:
         if_ = float(args['--if'])
+
+    ignore_over = None
+    if args['--ignore-over']:
+        ignore_over = float(args['--ignore-over'])
+
+    ignore_under = None
+    if args['--ignore-under']:
+        ignore_under = float(args['--ignore-under'])
 
     prefix = ''
     if args['--prefix']:
@@ -157,6 +169,12 @@ def main():
 
                         t_rx = float(val)
 
+                        if (ignore_over is not None) and (t_rx > ignore_over):
+                            continue
+
+                        if (ignore_under is not None) and (t_rx < ignore_under):
+                            continue
+
                         if match.group(2) == 'L':
                             sum_lsb += t_rx
                             n_lsb += 1
@@ -202,7 +220,11 @@ def main():
 
     if args['--ifrelation']:
         key = 'if_'
-        sidebands = ('mean',)
+        if args['--ifrelation-separate']:
+            sidebands = ('lsb', 'usb')
+        else:
+            sidebands = ('mean',)
+
         base_suffix = '{}_{}'.format(base_suffix, 'if')
 
         filtered = []
@@ -212,16 +234,25 @@ def main():
         for if_ in ifs:
             sum_lsb = 0.0
             sum_usb = 0.0
-            n = 0
+            n_lsb = 0
+            n_usb = 0
             for entry in data:
                 if entry.if_ == if_:
-                    n += 1
-                    sum_lsb += entry.lsb
-                    sum_usb += entry.usb
+                    if entry.lsb is not None:
+                        sum_lsb += entry.lsb
+                        n_lsb += 1
+                    if entry.usb is not None:
+                        sum_usb += entry.usb
+                        n_usb += 1
             filtered.append(Measurement(
-                None, if_, sum_lsb / n, sum_usb / n))
+                None, if_,
+                (None if n_lsb == 0 else (sum_lsb / n_lsb)),
+                (None if n_usb == 0 else (sum_usb / n_usb))))
 
         data = subtract_min(filtered)
+
+        if args['--oversample']:
+            data = oversample_data(data, int(args['--oversample']), have_lo=False)
 
     else:
         key = 'lo'
@@ -243,6 +274,9 @@ def main():
             sidebands = ('usb',)
         else:
             raise Exception('can not find sideband')
+
+        if args['--oversample']:
+            data = oversample_data(data, int(args['--oversample']), have_lsb=have_lsb, have_usb=have_usb)
 
     for sideband in sidebands:
         suffix = base_suffix
@@ -302,6 +336,9 @@ def main():
             min_ = min(x[1] for x in data_sb)
             data_sb = [(x[0], x[1] - min_) for x in data_sb]
 
+        if pol is not None:
+            suffix = '{}_{}'.format(suffix, pol)
+
         outfile = '{}trx_{}{}.txt'.format(prefix, sideband, suffix)
         logger.info('Writing %s', outfile)
         with open(outfile, 'w') as f:
@@ -344,12 +381,17 @@ def smooth_func(data, n, func):
 
 
 def smooth_despike(data, n, tolerance, ref_func):
+    allow_below = True
     if ref_func == 'min':
         func = min
         comparison = abs
     elif ref_func == 'median':
         func = median
         comparison = lambda x: x
+    elif ref_func == 'medianbothsides':
+        func = median
+        comparison = lambda x: x
+        allow_below = False
     else:
         raise Exception(
             'Unknown reference function "{}"'.format(ref_func))
@@ -364,7 +406,10 @@ def smooth_despike(data, n, tolerance, ref_func):
                 vals.append(data[j][1])
 
         ref = func(vals)
-        if comparison(data[i][1] - ref) < tolerance * ref:
+        if (
+                (comparison(data[i][1] - ref) < tolerance * ref)
+                and (allow_below or
+                (ref - comparison(data[i][1]) < tolerance * ref))):
             smoothed.append([data[i][0], data[i][1]])
 
     return smoothed
@@ -379,15 +424,18 @@ def smooth_median(data, n):
 
 
 def subtract_min(data):
-    min_lsb = 1000000.0
-    min_usb = 1000000.0
+    min_lsb = None
+    min_usb = None
     for entry in data:
-        if entry.lsb < min_lsb:
+        if (entry.lsb is not None) and ((min_lsb is None) or (entry.lsb < min_lsb)):
             min_lsb = entry.lsb
-        if entry.usb < min_usb:
+        if (entry.usb is not None) and ((min_usb is None) or (entry.usb < min_usb)):
             min_usb = entry.usb
 
-    return [x._replace(lsb=x.lsb - min_lsb, usb=x.usb - min_usb) for x in data]
+    return [x._replace(
+        lsb=(None if min_lsb is None else (x.lsb - min_lsb)),
+        usb=(None if min_usb is None else (x.usb - min_usb))
+    ) for x in data]
 
 
 def get_dcm_lo2_mapping():
@@ -403,6 +451,28 @@ def get_dcm_lo2_mapping():
         dcm_lo2[int(entry['DCM_ID'])] = int(entry['LO2'])
 
     return dcm_lo2
+
+
+def oversample_data(data, factor, have_lo=True, have_lsb=True, have_usb=True):
+    resampled = []
+
+    prev = None
+    for meas in data:
+        if prev:
+            for x in range(1, factor):
+                mf = float(x) / float(factor)
+                pf = 1.0 - mf
+                resampled.append(Measurement(
+                    ((pf * prev.lo + mf * meas.lo) if have_lo else None),
+                    (pf * prev.if_ + mf * meas.if_),
+                    ((pf * prev.lsb + mf * meas.lsb) if have_lsb else None),
+                    ((pf * prev.usb + mf * meas.usb) if have_usb else None),
+                ))
+
+        resampled.append(meas)
+        prev = meas
+
+    return resampled
 
 
 if __name__ == '__main__':
