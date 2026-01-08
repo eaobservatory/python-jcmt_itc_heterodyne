@@ -33,9 +33,13 @@ Options:
     --tolerance <tolerance>     Compression tolerance [default: 0.5]
     --lo2 <numbers>             LO2s to include (1-indexed, comma-separated)
     --pol <number>              Polarization to use
+    --clip                      Apply clipping
+    --clip-n-stdev <value>      Number of std. dev. [default: 2.0]
     --if <frequency>            Select values matching IF frequency
     --ifrelation                Output Trx vs IF instead of vs LO
     --ifrelation-separate       Use separate sidebands in --ifrelation mode
+    --lo-min <frequency>        Select values by LO frequency
+    --lo-max <frequency>        Select values by LO frequency
     --prefix <prefix>           Output filename prefix
     --json                      Also write JSON (for receiver info file)
     --verbose, -v               Verbose
@@ -51,7 +55,7 @@ from __future__ import print_function
 from collections import namedtuple
 import logging
 import re
-from statistics import mean, median
+from statistics import mean, median, stdev
 import sys
 
 from docopt import docopt
@@ -77,10 +81,6 @@ def main():
     pol = None
     if args['--pol']:
         pol = int(args['--pol'])
-
-    if_ = None
-    if args['--if']:
-        if_ = float(args['--if'])
 
     ignore_over = None
     if args['--ignore-over']:
@@ -142,17 +142,8 @@ def main():
                 if 'if_ghz' in row:
                     if_freq = float(row['if_ghz'])
 
-                if if_:
-                    if if_freq is None:
-                        raise Exception('if_ghz column not present')
-
-                    if not abs(if_freq - if_) < 0.05:
-                        continue
-
-                sum_lsb = 0.0
-                n_lsb = 0
-                sum_usb = 0.0
-                n_usb = 0
+                values_lsb = []
+                values_usb = []
 
                 for (key, val) in row.items():
                     match = pattern.match(key)
@@ -176,18 +167,16 @@ def main():
                             continue
 
                         if match.group(2) == 'L':
-                            sum_lsb += t_rx
-                            n_lsb += 1
+                            values_lsb.append(t_rx)
 
                         elif match.group(2) == 'U':
-                            sum_usb += t_rx
-                            n_usb += 1
+                            values_usb.append(t_rx)
 
                 data.append(Measurement(
                     lo_freq,
                     if_freq,
-                    (None if not n_lsb else (sum_lsb / n_lsb)),
-                    (None if not n_usb else (sum_usb / n_usb))))
+                    (None if not values_lsb else mean(values_lsb)),
+                    (None if not values_usb else mean(values_usb))))
 
     # Average data from multiple files?
     if len(args['<filename>']) > 1:
@@ -216,6 +205,49 @@ def main():
 
         data = filtered
 
+    # Apply clipping after sorting by LO?
+    if args['--clip']:
+        los = sorted(set(x.lo for x in data))
+        filtered = []
+
+        for lo in los:
+            lo_values = []
+            for entry in data:
+                if entry.lo == lo:
+                    lo_values.append(entry)
+
+            if lo_values:
+                filtered.extend(clipped_measurements(
+                    lo_values,
+                    tol_n_stdev=float(args['--clip-n-stdev'])))
+
+        data = filtered
+
+    # Select a particular IF?
+    if args['--if']:
+        if_request = float(args['--if'])
+        filtered = []
+
+        for entry in data:
+            if not abs(entry.if_ - if_request) < 0.05:
+                continue
+            filtered.append(entry)
+
+        data = filtered
+
+    # Select by LO?
+    if args['--lo-min'] or args['--lo-max']:
+        lo_min = float(args['--lo-min'])
+        lo_max = float(args['--lo-max'])
+        filtered = []
+
+        for entry in data:
+            if not (lo_min <= entry.lo <= lo_max):
+                continue
+            filtered.append(entry)
+
+        data = filtered
+
     base_suffix = ''
 
     if args['--ifrelation']:
@@ -232,22 +264,18 @@ def main():
         ifs = sorted(set(x.if_ for x in data))
 
         for if_ in ifs:
-            sum_lsb = 0.0
-            sum_usb = 0.0
-            n_lsb = 0
-            n_usb = 0
+            values_lsb = []
+            values_usb = []
             for entry in data:
                 if entry.if_ == if_:
                     if entry.lsb is not None:
-                        sum_lsb += entry.lsb
-                        n_lsb += 1
+                        values_lsb.append(entry.lsb)
                     if entry.usb is not None:
-                        sum_usb += entry.usb
-                        n_usb += 1
+                        values_usb.append(entry.usb)
             filtered.append(Measurement(
                 None, if_,
-                (None if n_lsb == 0 else (sum_lsb / n_lsb)),
-                (None if n_usb == 0 else (sum_usb / n_usb))))
+                (None if not values_lsb else mean(values_lsb)),
+                (None if not values_usb else mean(values_usb))))
 
         data = subtract_min(filtered)
 
@@ -343,7 +371,8 @@ def main():
         logger.info('Writing %s', outfile)
         with open(outfile, 'w') as f:
             for (freq, value) in data_sb:
-                print(freq, '{:.1f}'.format(value), file=f)
+                if value is not None:
+                    print(freq, '{:.1f}'.format(value), file=f)
 
         if args['--json']:
             with open(outfile.replace('.txt', '.json'), 'w') as f:
@@ -473,6 +502,36 @@ def oversample_data(data, factor, have_lo=True, have_lsb=True, have_usb=True):
         prev = meas
 
     return resampled
+
+
+def clipped_measurements(values, tol_n_stdev=2):
+    if not values:
+        return []
+
+    values_lsb = []
+    values_usb = []
+    for value in values:
+        if value.lsb is not None:
+            values_lsb.append(value.lsb)
+        if value.usb is not None:
+            values_usb.append(value.usb)
+
+    median_lsb = median(values_lsb)
+    stdev_lsb = stdev(values_lsb)
+    min_lsb = median_lsb - tol_n_stdev * stdev_lsb
+    max_lsb = median_lsb + tol_n_stdev * stdev_lsb
+
+    median_usb = median(values_usb)
+    stdev_usb = stdev(values_usb)
+    min_usb = median_usb - tol_n_stdev * stdev_usb
+    max_usb = median_usb + tol_n_stdev * stdev_usb
+
+    return [
+        x._replace(
+            lsb=(x.lsb if (min_lsb < x.lsb < max_lsb) else None),
+            usb=(x.usb if (min_usb < x.usb < max_usb) else None),
+        )
+        for x in values]
 
 
 if __name__ == '__main__':
