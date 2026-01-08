@@ -47,6 +47,7 @@ Options:
     --oversample <factor>       Oversample prior to filtering
     --ignore-over <value>       Ingore values greater than this
     --ignore-under <value>      Ingore values less than this
+    --two-d                     Include LO and IF in output (smoothing etc. won't work with this)
 """
 
 
@@ -283,8 +284,14 @@ def main():
             data = oversample_data(data, int(args['--oversample']), have_lo=False)
 
     else:
-        key = 'lo'
-        data = sorted(data, key=lambda x: x.lo)
+        if args['--two-d']:
+            key = ('lo', 'if_')
+            data = sorted(data, key=lambda x: (x.lo, x.if_))
+            base_suffix = '{}_{}'.format(base_suffix, 'loif')
+
+        else:
+            key = 'lo'
+            data = sorted(data, key=lambda x: x.lo)
 
         have_lsb = False
         have_usb = False
@@ -311,7 +318,10 @@ def main():
         if sideband == 'mean':
             data_sb = [(getattr(x, key), (x.lsb + x.usb) / 2.0) for x in data]
         else:
-            data_sb = [(getattr(x, key), getattr(x, sideband)) for x in data]
+            if isinstance(key, tuple):
+                data_sb = [(tuple(getattr(x, k) for k in key), getattr(x, sideband)) for x in data]
+            else:
+                data_sb = [(getattr(x, key), getattr(x, sideband)) for x in data]
 
         if args['--smooth']:
             suffix = '{}_{}'.format(suffix, 'sm')
@@ -369,10 +379,17 @@ def main():
 
         outfile = '{}trx_{}{}.txt'.format(prefix, sideband, suffix)
         logger.info('Writing %s', outfile)
+        prev_value = None
         with open(outfile, 'w') as f:
             for (freq, value) in data_sb:
                 if value is not None:
-                    print(freq, '{:.1f}'.format(value), file=f)
+                    if isinstance(freq, tuple):
+                        if (prev_value is not None) and (prev_value != freq[0]):
+                            print('', file=f)
+                        prev_value = freq[0]
+                        print(' '.join(str(x) for x in freq), '{:.1f}'.format(value), file=f)
+                    else:
+                        print(freq, '{:.1f}'.format(value), file=f)
 
         if args['--json']:
             with open(outfile.replace('.txt', '.json'), 'w') as f:
