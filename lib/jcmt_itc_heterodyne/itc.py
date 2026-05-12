@@ -1,5 +1,5 @@
 # Copyright (C) 2007-2009 Science and Technology Facilities Council.
-# Copyright (C) 2015-2025 East Asian Observatory
+# Copyright (C) 2015-2026 East Asian Observatory
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -345,12 +345,13 @@ class HeterodyneITC(object):
                 pass_extra = {} if (passes > 1) else extra_output
 
                 if map_mode != self.RASTER:
-                    dy_adjusted = dy
+                    # Array overlap factor.
+                    multiscan = 1.0
 
                 else:
                     if pass_ == 0:
                         # Non-basket weave, or primary basket-weave direction.
-                        (n_rows, n_points, dy_adjusted) = self._get_raster_parameters(
+                        (n_rows, n_points, multiscan) = self._get_raster_parameters(
                             dim_x, dim_y, dx, dy, array_info, array_overscan)
 
                     else:
@@ -359,7 +360,7 @@ class HeterodyneITC(object):
                         # still along scan direction (y)
                         # (and overscan_y / dy
                         # still across scan direction (x)).
-                        (n_rows, n_points, dy_adjusted) = self._get_raster_parameters(
+                        (n_rows, n_points, multiscan) = self._get_raster_parameters(
                             dim_y, dim_x, dx, dy, array_info, array_overscan)
 
                     pass_extra['raster_n_points'] = n_points
@@ -375,7 +376,7 @@ class HeterodyneITC(object):
                         receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
                         n_points=n_points, separate_offs=separate_offs,
                         dual_polarization=dual_polarization,
-                        t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
+                        t_sys=t_sys, freq_res=freq_res, multiscan=multiscan)
 
                     self._check_int_time(
                         int_time, 'requested target sensitivity',
@@ -414,7 +415,7 @@ class HeterodyneITC(object):
                         receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
                         n_points=n_points, separate_offs=separate_offs,
                         dual_polarization=dual_polarization,
-                        t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
+                        t_sys=t_sys, freq_res=freq_res, multiscan=multiscan)
 
                     elapsed_time = self._elapsed_time_for_integration_time(
                         time=int_time, n_rows=n_rows,
@@ -449,7 +450,7 @@ class HeterodyneITC(object):
                         receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
                         n_points=n_points, separate_offs=separate_offs,
                         dual_polarization=dual_polarization,
-                        t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
+                        t_sys=t_sys, freq_res=freq_res, multiscan=multiscan)
 
                     rmss.append(rms)
 
@@ -494,11 +495,12 @@ class HeterodyneITC(object):
     def _get_raster_parameters(
             self, dim_x, dim_y, dx, dy, array_info, array_overscan):
         """
-        Obtain raster map parameters: n_rows, n_points and adjusted dy.
+        Obtain raster map parameters: n_rows, n_points and multiscan factor.
         """
 
         overscan_x = 0.0
         overscan_y = 0.0
+        multiscan = 1.0
 
         if (array_info is not None) and array_overscan:
             overscan_x = 0.5 * array_info.size
@@ -513,15 +515,19 @@ class HeterodyneITC(object):
             # Map height less than array footprint: do one scan
             # and set dy=footprint to ensure multiscan factor
             # is 1.
-            # TODO: better to calculate multiscan here rather
-            # than pass dy to calculation routines?
             n_rows = 1
             dy_adjusted = array_info.footprint
 
         else:
             n_rows = int((dim_y + 2 * overscan_y) / dy) + 1
 
-        return (n_rows, n_points, dy_adjusted)
+        if array_info is not None:
+            # For arrays, if the dy is less than the footprint, take the
+            # overlap into account when rasterizing.
+            multiscan = sqrt(
+                dy_adjusted / (array_info.footprint * array_info.fraction_available))
+
+        return (n_rows, n_points, multiscan)
 
     def _split_basket_weave_int_time(self, **kwargs):
         """
@@ -609,7 +615,7 @@ class HeterodyneITC(object):
         # First direction.
         int_part = frac * int_time
 
-        (n_rows, n_points, dy_adjusted) = self._get_raster_parameters(
+        (n_rows, n_points, multiscan) = self._get_raster_parameters(
             dim_x, dim_y, dx, dy, array_info, array_overscan)
 
         self._check_int_time(int_part, 'splitting algorithm')
@@ -619,12 +625,12 @@ class HeterodyneITC(object):
             receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
             n_points=n_points, separate_offs=separate_offs,
             dual_polarization=dual_polarization,
-            t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
+            t_sys=t_sys, freq_res=freq_res, multiscan=multiscan)
 
         # Second direction.
         int_part = (1.0 - frac) * int_time
 
-        (n_rows, n_points, dy_adjusted) = self._get_raster_parameters(
+        (n_rows, n_points, multiscan) = self._get_raster_parameters(
             dim_y, dim_x, dx, dy, array_info, array_overscan)
 
         self._check_int_time(int_part, 'splitting algorithm')
@@ -634,7 +640,7 @@ class HeterodyneITC(object):
             receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
             n_points=n_points, separate_offs=separate_offs,
             dual_polarization=dual_polarization,
-            t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
+            t_sys=t_sys, freq_res=freq_res, multiscan=multiscan)
 
         return rms_1 / rms_2
 
@@ -651,7 +657,7 @@ class HeterodyneITC(object):
         # First direction.
         elapsed_part = frac * elapsed_time
 
-        (n_rows, n_points, dy_adjusted) = self._get_raster_parameters(
+        (n_rows, n_points, multiscan) = self._get_raster_parameters(
             dim_x, dim_y, dx, dy, array_info, array_overscan)
 
         int_time = self._integration_time_for_elapsed_time(
@@ -667,12 +673,12 @@ class HeterodyneITC(object):
             receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
             n_points=n_points, separate_offs=separate_offs,
             dual_polarization=dual_polarization,
-            t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
+            t_sys=t_sys, freq_res=freq_res, multiscan=multiscan)
 
         # Second direction.
         elapsed_part = (1.0 - frac) * elapsed_time
 
-        (n_rows, n_points, dy_adjusted) = self._get_raster_parameters(
+        (n_rows, n_points, multiscan) = self._get_raster_parameters(
             dim_y, dim_x, dx, dy, array_info, array_overscan)
 
         int_time = self._integration_time_for_elapsed_time(
@@ -688,7 +694,7 @@ class HeterodyneITC(object):
             receiver=receiver, map_mode=map_mode, sw_mode=sw_mode,
             n_points=n_points, separate_offs=separate_offs,
             dual_polarization=dual_polarization,
-            t_sys=t_sys, freq_res=freq_res, dy=dy_adjusted)
+            t_sys=t_sys, freq_res=freq_res, multiscan=multiscan)
 
         return rms_1 / rms_2
 
@@ -861,7 +867,7 @@ class HeterodyneITC(object):
             self, time,
             receiver, map_mode, sw_mode,
             n_points, separate_offs,
-            dual_polarization, t_sys, freq_res, dy):
+            dual_polarization, t_sys, freq_res, multiscan):
         """
         Calculate the RMS from a given integration time accounting for
         shared or separate offs.
@@ -892,15 +898,6 @@ class HeterodyneITC(object):
 
             if np_shared > n_points:
                 np_shared = n_points
-
-        # Array overlap factor.
-        multiscan = 1.0
-        # For arrays, if the dy is less than the footprint, take the
-        # overlap into account when rasterizing.
-        array_info = HeterodyneReceiver.get_receiver_info(receiver).array
-        if (map_mode == self.RASTER) and (array_info is not None):
-            multiscan = sqrt(
-                dy / (array_info.footprint * array_info.fraction_available))
 
         rms = (
             multiscan * het_fudge * het_dfact *
