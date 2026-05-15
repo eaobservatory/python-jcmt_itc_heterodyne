@@ -293,7 +293,9 @@ class HeterodyneITC(object):
             receiver, is_dsb, dual_polarization, sw_mode)
 
         try:
-            extra_output = {}
+            extra_output = {
+                'warnings': [],
+            }
 
             t_sys = self._calculate_t_sys(
                 receiver=receiver, freq=freq, tau_225=tau_225,
@@ -342,7 +344,7 @@ class HeterodyneITC(object):
                             t_sys=t_sys)
 
             for pass_ in range(0, passes):
-                pass_extra = {} if (passes > 1) else extra_output
+                pass_extra = {'warnings': []} if (passes > 1) else extra_output
 
                 if map_mode != self.RASTER:
                     # Array overlap factor.
@@ -352,7 +354,8 @@ class HeterodyneITC(object):
                     if pass_ == 0:
                         # Non-basket weave, or primary basket-weave direction.
                         (n_rows, n_points, multiscan) = self._get_raster_parameters(
-                            dim_x, dim_y, dx, dy, array_info, array_overscan)
+                            dim_x, dim_y, dx, dy, array_info, array_overscan,
+                            extra_output=pass_extra)
 
                     else:
                         # Secondary basket-weave direction: scan along "dim_y"
@@ -361,7 +364,8 @@ class HeterodyneITC(object):
                         # (and overscan_y / dy
                         # still across scan direction (x)).
                         (n_rows, n_points, multiscan) = self._get_raster_parameters(
-                            dim_y, dim_x, dx, dy, array_info, array_overscan)
+                            dim_y, dim_x, dx, dy, array_info, array_overscan,
+                            extra_output=pass_extra)
 
                     pass_extra['raster_n_points'] = n_points
                     pass_extra['raster_n_rows'] = n_rows
@@ -456,6 +460,13 @@ class HeterodyneITC(object):
 
                 if passes > 1:
                     assert pass_extra is not extra_output
+
+                    extra_output['warnings'].extend(map(
+                        (lambda x: 'Along {}: {}{}'.format(
+                            ('width' if pass_ == 0 else 'height'),
+                            x[0].lower(), x[1:])),
+                        pass_extra.pop('warnings')))
+
                     for (key, value) in pass_extra.items():
                         extra_output['{}_{}'.format(key, pass_ + 1)] = value
 
@@ -493,9 +504,15 @@ class HeterodyneITC(object):
         return pow(sum_, -0.5)
 
     def _get_raster_parameters(
-            self, dim_x, dim_y, dx, dy, array_info, array_overscan):
+            self, dim_x, dim_y, dx, dy, array_info, array_overscan,
+            extra_output=None):
         """
         Obtain raster map parameters: n_rows, n_points and multiscan factor.
+
+        Note: the multiscan factor is a multiplicative factor applied to the
+        RMS calculation (see _rms_in_integration_time) taking into account the
+        number of times an array receptor passes over a scan point. The
+        fraction of working receptors is also included.
         """
 
         overscan_x = 0.0
@@ -505,27 +522,33 @@ class HeterodyneITC(object):
         if (array_info is not None) and array_overscan:
             overscan_x = 0.5 * array_info.size
 
-        dy_adjusted = dy
-
-        # TODO: should probably be ceil rather than floor + 1
         n_points = int((dim_x + 2 * overscan_x) / dx) + 1
 
-        if ((array_info is not None)
-                and ((dim_y + 2 * overscan_y) <= array_info.footprint)):
-            # Map height less than array footprint: do one scan
-            # and set dy=footprint to ensure multiscan factor
-            # is 1.
-            n_rows = 1
-            dy_adjusted = array_info.footprint
-
-        else:
-            n_rows = int((dim_y + 2 * overscan_y) / dy) + 1
+        n_rows = int((dim_y + 2 * overscan_y) / dy) + 1
 
         if array_info is not None:
             # For arrays, if the dy is less than the footprint, take the
-            # overlap into account when rasterizing.
-            multiscan = sqrt(
-                dy_adjusted / (array_info.footprint * array_info.fraction_available))
+            # overlap into account when rasterizing.  Round the number of
+            # hits to the nearest integer to avoid rounding errors. (And also
+            # force 3/4 array spacing to 1 hit since coverage is uneven?)
+            hits = int(round(array_info.footprint / dy))
+
+            # If the map is too small in dim_y, such that there are fewer rows
+            # than intended hits, reduce hits to match rows and issue warning.
+            if hits > n_rows:
+                if extra_output is not None and 'warnings' in extra_output:
+                    extra_output['warnings'].append(
+                        'The number of rows ({}) is insufficient to '
+                        'complete the coverage implied by the selected '
+                        'raster scan spacing ({} passes).'.format(
+                            n_rows, hits))
+
+                hits = n_rows
+
+            if extra_output is not None:
+                extra_output['multiscan_passes'] = hits
+
+            multiscan = pow(hits * array_info.fraction_available, -0.5)
 
         return (n_rows, n_points, multiscan)
 

@@ -256,26 +256,26 @@ class CalculateTest(TestCase):
         # HARP Raster PSSW
 
         self._test_calculation(
-            0.57735, 11.295, 27633.0, 86.9, 1260.4,
+            0.57735, 11.297, 27636.9, 86.9, 1260.4,
             HeterodyneReceiver.HARP, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             345, 0.977, 0.25, 50, False, False, None,
             1800, 900, 7.27, 116.4, False, False, False)
 
         self._test_calculation(
-            0.57735, 11.417, 29473.3, 86.9, 1260.4,
+            0.57735, 11.419, 29477.4, 86.9, 1260.4,
             HeterodyneReceiver.HARP, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             345, 0.977, 0.25, 50, False, False, None,
             1800, 900, 7.27, 116.4, True, False, False,
             tol_factor=5.0)
 
         self._test_calculation(
-            0.57735, 0.187, 1778.7, 84.3, 627.3,
+            0.57735, 0.186, 1776.4, 84.3, 627.3,
             HeterodyneReceiver.HARP, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             330, 0.977, 0.04, 75, False, False, None,
             300, 400, 7.27, 7.3, False, False, False)
 
         self._test_calculation(
-            0.8660254, 20.663, 21765.6, 97.6, 630.9,
+            0.8660254, 20.666, 21768.7, 97.6, 630.9,
             HeterodyneReceiver.HARP, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             340, 0.0305, 0.065, 75, False, False, None,
             800, 400, 7.27, 58.2, False, False, False)
