@@ -256,7 +256,7 @@ class CalculateTest(TestCase):
         # HARP Raster PSSW
 
         self._test_calculation(
-            0.57735, 11.297, 27636.9, 86.9, 1260.4,
+            0.57735, 8.473, 20803.7, 86.9, 1260.4,
             HeterodyneReceiver.HARP, HeterodyneITC.RASTER, HeterodyneITC.PSSW,
             345, 0.977, 0.25, 50, False, False, None,
             1800, 900, 7.27, 116.4, False, False, False)

@@ -355,7 +355,7 @@ class HeterodyneITC(object):
                         # Non-basket weave, or primary basket-weave direction.
                         (n_rows, n_points, multiscan) = self._get_raster_parameters(
                             dim_x, dim_y, dx, dy, array_info, array_overscan,
-                            extra_output=pass_extra)
+                            basket_weave=basket_weave, extra_output=pass_extra)
 
                     else:
                         # Secondary basket-weave direction: scan along "dim_y"
@@ -365,7 +365,7 @@ class HeterodyneITC(object):
                         # still across scan direction (x)).
                         (n_rows, n_points, multiscan) = self._get_raster_parameters(
                             dim_y, dim_x, dx, dy, array_info, array_overscan,
-                            extra_output=pass_extra)
+                            basket_weave=basket_weave, extra_output=pass_extra)
 
                     pass_extra['raster_n_points'] = n_points
                     pass_extra['raster_n_rows'] = n_rows
@@ -505,14 +505,15 @@ class HeterodyneITC(object):
 
     def _get_raster_parameters(
             self, dim_x, dim_y, dx, dy, array_info, array_overscan,
-            extra_output=None):
+            basket_weave=True, extra_output=None):
         """
         Obtain raster map parameters: n_rows, n_points and multiscan factor.
 
         Note: the multiscan factor is a multiplicative factor applied to the
         RMS calculation (see _rms_in_integration_time) taking into account the
         number of times an array receptor passes over a scan point. The
-        fraction of working receptors is also included.
+        fraction of working receptors is also included, but only if there
+        would be multiple hits, or the basket_weave parameter is true.
         """
 
         overscan_x = 0.0
@@ -548,7 +549,17 @@ class HeterodyneITC(object):
             if extra_output is not None:
                 extra_output['multiscan_passes'] = hits
 
-            multiscan = pow(hits * array_info.fraction_available, -0.5)
+            if basket_weave or hits > 1:
+                hits *= array_info.fraction_available
+
+            elif (extra_output is not None and 'warnings' in extra_output
+                    and array_info.fraction_available < 1.0):
+                extra_output['warnings'].append(
+                    'Not applying the fraction of available receptors '
+                    'because the scan has only one pass per point.  There '
+                    'will instead be gaps in coverage.')
+
+            multiscan = pow(hits, -0.5)
 
         return (n_rows, n_points, multiscan)
 
