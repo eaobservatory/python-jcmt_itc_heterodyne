@@ -63,7 +63,18 @@ Here is an example time calculation for a HARP jiggle-chop observation:
 For raster observations, the size of the map is specified via
 the `dim_x` and `dim_y` parameters.  The pixel size is given
 by `dx` and `dy` for single pixel receivers.  For array receivers,
-`dy` is the scan spacing.
+`dy` is the scan spacing and the size of the map is adjusted
+based on the `array_overscan_x` and `array_overscan_y` parameters.
+Along the scan direction, `array_overscan_x` adds half of the array
+"size" (ignoring rotation), i.e. the "radius", at each end of the scan
+(`dim_x`).  This parameter defaults to `True` since it matches
+the behavior of the telescope control system.  In the other direction,
+`array_overscan_y` adds extra rows so that points in the specified
+size (`dim_y`) are observed as many times as the coverage
+implied by the selected spacing (`dy`), based on the array "footprint"
+(including rotation).  This parameter defaults to `False` and,
+to include these extra rows, any observation must include the
+corresponding additional size in the non-scan direction.
 
 The `HeterodyneITC` object also has various utility methods such
 as `velocity_to_freq_res` and `estimate_zenith_angle_deg`.

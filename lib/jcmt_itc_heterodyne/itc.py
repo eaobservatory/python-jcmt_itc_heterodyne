@@ -163,7 +163,8 @@ class HeterodyneITC(object):
             dim_x, dim_y, dx, dy, basket_weave,
             separate_offs, continuum_mode,
             if_freq=None, sideband=None,
-            with_extra_output=False):
+            with_extra_output=False,
+            array_overscan_x=True, array_overscan_y=False):
         """
         Calculate the observing time required for a given RMS.
 
@@ -179,7 +180,9 @@ class HeterodyneITC(object):
             is_dsb=is_dsb, dual_polarization=dual_polarization,
             n_points=n_points,
             dim_x=dim_x, dim_y=dim_y, dx=dx, dy=dy,
-            basket_weave=basket_weave, array_overscan=True,
+            basket_weave=basket_weave,
+            array_overscan_x=array_overscan_x,
+            array_overscan_y=array_overscan_y,
             separate_offs=separate_offs, continuum_mode=continuum_mode,
             if_freq=if_freq, sideband=sideband)
 
@@ -200,7 +203,8 @@ class HeterodyneITC(object):
             dim_x, dim_y, dx, dy, basket_weave,
             separate_offs, continuum_mode,
             if_freq=None, sideband=None,
-            with_extra_output=False):
+            with_extra_output=False,
+            array_overscan_x=True, array_overscan_y=False):
         """
         Calculate the RMS obtained in a given elapsed time.
 
@@ -216,7 +220,9 @@ class HeterodyneITC(object):
             is_dsb=is_dsb, dual_polarization=dual_polarization,
             n_points=n_points,
             dim_x=dim_x, dim_y=dim_y, dx=dx, dy=dy,
-            basket_weave=basket_weave, array_overscan=True,
+            basket_weave=basket_weave,
+            array_overscan_x=array_overscan_x,
+            array_overscan_y=array_overscan_y,
             separate_offs=separate_offs, continuum_mode=continuum_mode,
             if_freq=if_freq, sideband=sideband)
 
@@ -237,7 +243,8 @@ class HeterodyneITC(object):
             dim_x, dim_y, dx, dy, basket_weave,
             separate_offs, continuum_mode,
             if_freq=None, sideband=None,
-            with_extra_output=False):
+            with_extra_output=False,
+            array_overscan_x=True, array_overscan_y=False):
         """
         Calculate the RMS obtained in a given integration time.
 
@@ -253,7 +260,9 @@ class HeterodyneITC(object):
             is_dsb=is_dsb, dual_polarization=dual_polarization,
             n_points=n_points,
             dim_x=dim_x, dim_y=dim_y, dx=dx, dy=dy,
-            basket_weave=basket_weave, array_overscan=True,
+            basket_weave=basket_weave,
+            array_overscan_x=array_overscan_x,
+            array_overscan_y=array_overscan_y,
             separate_offs=separate_offs, continuum_mode=continuum_mode,
             if_freq=if_freq, sideband=sideband)
 
@@ -272,7 +281,8 @@ class HeterodyneITC(object):
             freq, freq_res,
             tau_225, zenith_angle_deg, is_dsb, dual_polarization,
             n_points,
-            dim_x, dim_y, dx, dy, basket_weave, array_overscan,
+            dim_x, dim_y, dx, dy, basket_weave,
+            array_overscan_x, array_overscan_y,
             separate_offs, continuum_mode, if_freq, sideband):
         """
         Perform ITC calculation.
@@ -329,7 +339,8 @@ class HeterodyneITC(object):
                             continuum_mode=continuum_mode,
                             dim_x=dim_x, dim_y=dim_y, dx=dx, dy=dy,
                             array_info=array_info,
-                            array_overscan=array_overscan,
+                            array_overscan_x=array_overscan_x,
+                            array_overscan_y=array_overscan_y,
                             t_sys=t_sys)
 
                     elif calc_mode == self.ELAPSED_TO_RMS:
@@ -340,7 +351,8 @@ class HeterodyneITC(object):
                             continuum_mode=continuum_mode,
                             dim_x=dim_x, dim_y=dim_y, dx=dx, dy=dy,
                             array_info=array_info,
-                            array_overscan=array_overscan,
+                            array_overscan_x=array_overscan_x,
+                            array_overscan_y=array_overscan_y,
                             t_sys=t_sys)
 
             for pass_ in range(0, passes):
@@ -354,7 +366,8 @@ class HeterodyneITC(object):
                     if pass_ == 0:
                         # Non-basket weave, or primary basket-weave direction.
                         (n_rows, n_points, multiscan) = self._get_raster_parameters(
-                            dim_x, dim_y, dx, dy, array_info, array_overscan,
+                            dim_x, dim_y, dx, dy,
+                            array_info, array_overscan_x, array_overscan_y,
                             basket_weave=basket_weave, extra_output=pass_extra)
 
                     else:
@@ -364,7 +377,8 @@ class HeterodyneITC(object):
                         # (and overscan_y / dy
                         # still across scan direction (x)).
                         (n_rows, n_points, multiscan) = self._get_raster_parameters(
-                            dim_y, dim_x, dx, dy, array_info, array_overscan,
+                            dim_y, dim_x, dx, dy,
+                            array_info, array_overscan_x, array_overscan_y,
                             basket_weave=basket_weave, extra_output=pass_extra)
 
                     pass_extra['raster_n_points'] = n_points
@@ -504,7 +518,8 @@ class HeterodyneITC(object):
         return pow(sum_, -0.5)
 
     def _get_raster_parameters(
-            self, dim_x, dim_y, dx, dy, array_info, array_overscan,
+            self, dim_x, dim_y, dx, dy,
+            array_info, array_overscan_x, array_overscan_y,
             basket_weave=True, extra_output=None):
         """
         Obtain raster map parameters: n_rows, n_points and multiscan factor.
@@ -520,7 +535,7 @@ class HeterodyneITC(object):
         overscan_y = 0.0
         multiscan = 1.0
 
-        if (array_info is not None) and array_overscan:
+        if (array_info is not None) and array_overscan_x:
             overscan_x = 0.5 * array_info.size
 
         n_points = int((dim_x + 2 * overscan_x) / dx) + 1
@@ -639,7 +654,8 @@ class HeterodyneITC(object):
     def _split_basket_weave_int_rms_ratio(
             self, frac, int_time, receiver, freq_res,
             dual_polarization, continuum_mode,
-            dim_x, dim_y, dx, dy, array_info, array_overscan,
+            dim_x, dim_y, dx, dy,
+            array_info, array_overscan_x, array_overscan_y,
             t_sys):
         # Assumed parameters for raster mode.
         map_mode = self.RASTER
@@ -650,7 +666,8 @@ class HeterodyneITC(object):
         int_part = frac * int_time
 
         (n_rows, n_points, multiscan) = self._get_raster_parameters(
-            dim_x, dim_y, dx, dy, array_info, array_overscan)
+            dim_x, dim_y, dx, dy,
+            array_info, array_overscan_x, array_overscan_y)
 
         self._check_int_time(int_part, 'splitting algorithm')
 
@@ -665,7 +682,8 @@ class HeterodyneITC(object):
         int_part = (1.0 - frac) * int_time
 
         (n_rows, n_points, multiscan) = self._get_raster_parameters(
-            dim_y, dim_x, dx, dy, array_info, array_overscan)
+            dim_y, dim_x, dx, dy,
+            array_info, array_overscan_x, array_overscan_y)
 
         self._check_int_time(int_part, 'splitting algorithm')
 
@@ -681,7 +699,8 @@ class HeterodyneITC(object):
     def _split_basket_weave_elapsed_rms_ratio(
             self, frac, elapsed_time, receiver, freq_res,
             dual_polarization, continuum_mode,
-            dim_x, dim_y, dx, dy, array_info, array_overscan,
+            dim_x, dim_y, dx, dy,
+            array_info, array_overscan_x, array_overscan_y,
             t_sys):
         # Assumed parameters for raster mode.
         map_mode = self.RASTER
@@ -692,7 +711,8 @@ class HeterodyneITC(object):
         elapsed_part = frac * elapsed_time
 
         (n_rows, n_points, multiscan) = self._get_raster_parameters(
-            dim_x, dim_y, dx, dy, array_info, array_overscan)
+            dim_x, dim_y, dx, dy,
+            array_info, array_overscan_x, array_overscan_y)
 
         int_time = self._integration_time_for_elapsed_time(
             elapsed=elapsed_part, n_rows=n_rows,
@@ -713,7 +733,8 @@ class HeterodyneITC(object):
         elapsed_part = (1.0 - frac) * elapsed_time
 
         (n_rows, n_points, multiscan) = self._get_raster_parameters(
-            dim_y, dim_x, dx, dy, array_info, array_overscan)
+            dim_y, dim_x, dx, dy,
+            array_info, array_overscan_x, array_overscan_y)
 
         int_time = self._integration_time_for_elapsed_time(
             elapsed=elapsed_part, n_rows=n_rows,
