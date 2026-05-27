@@ -75,6 +75,7 @@ implied by the selected spacing (`dy`), based on the array "footprint"
 (including rotation).  This parameter defaults to `False` and,
 to include these extra rows, any observation must include the
 corresponding additional size in the non-scan direction.
+The modified size is returned in the `extra` parameter `overscanned_dim_y`.
 
 The `HeterodyneITC` object also has various utility methods such
 as `velocity_to_freq_res` and `estimate_zenith_angle_deg`.

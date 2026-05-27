@@ -549,6 +549,14 @@ class HeterodyneITC(object):
             # force 3/4 array spacing to 1 hit since coverage is uneven?)
             hits = int(round(array_info.footprint / dy))
 
+            if array_overscan_y:
+                # Add extra rows to complete the implied number of hits.
+                n_rows += hits - 1
+
+                if extra_output is not None:
+                    extra_output['overscanned_dim_y'] = int(ceil(
+                        dy * (n_rows - 1)))
+
             # If the map is too small in dim_y, such that there are fewer rows
             # than intended hits, reduce hits to match rows and issue warning.
             if hits > n_rows:
