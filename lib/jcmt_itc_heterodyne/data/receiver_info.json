@@ -302,12 +302,12 @@
             "size": 120.0,
             "f_angle": 14.036243468,
             "scan_spacings": [
-                ["Full array", 116.4],
-                ["3/4 array", 87.3],
-                ["1/2 array", 58.2],
-                ["1/4 array", 29.1],
-                ["1/8 array", 14.6],
-                ["Half beam", 7.3]
+                ["Full array", 116.41],
+                ["3/4 array", 87.31],
+                ["1/2 array", 58.20],
+                ["1/4 array", 29.10],
+                ["1/8 array", 14.55],
+                ["Half beam", 7.27]
             ],
             "jiggle_patterns": [
                 ["HARP 4", 16],
