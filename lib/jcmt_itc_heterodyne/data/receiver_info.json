@@ -309,6 +309,7 @@
                 ["1/8 array", 14.55],
                 ["Half beam", 7.27]
             ],
+            "default_scan_spacing": 14.55,
             "jiggle_patterns": [
                 ["HARP 4", 16],
                 ["HARP 5", 25]
